@@ -1,0 +1,41 @@
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# Creatime — Funding Sources (GitHub-Side-Konfiguration)
+# Stand: 2026-07-13 (v10 — Sponsoring-Infrastruktur)
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+#
+# HINWEIS — Echt-Payouts benötigen 18+ (Stripe / PayPal KYC-Gate).
+# Der/Die Entwickler:in ist aktuell <18, daher sind die Felder als
+# PLATZHALTER eingespeichert. Sobald das Account-Alter erreicht ist:
+#
+#   1. GitHub-Sponsors-Profil unter https://github.com/sponsors/<user>
+#      einrichten (Stripe Connect ist Pflicht, akzeptiert erst ab 18)
+#   2. Ko-fi-Account unter https://ko-fi.com/<user> einrichten
+#   3. Beide echten Account-Namen in die Felder unten eintragen
+#   4. GitHub & Ko-fi zeigen die Buttons dann AUTOMATISCH im Repo
+#
+# Bis dahin: GitHub zeigt einen dezenten "Sponsor"-Button-Look mit
+# Hinweis, dass Sponsoring noch nicht aktiviert ist — das ist OK und
+# stört nichts. Der Aufbau von Audience läuft jetzt schon.
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+# GitHub Sponsors — https://github.com/sponsors/<user>
+# (Canonical-Case = wie dein GitHub-Profil, hier MoritzHuyer)
+github: MoritzHuyer
+
+# Ko-fi — https://ko-fi.com/<user>  (One-off-Spenden + Memberships)
+ko_fi: moritzhuyer
+
+# Optional — weitere Plattformen, alle ebenfalls 18+:
+# open_collective: creatime     # https://opencollective.com/<slug>
+# liberapay: moritzhuyer        # https://liberapay.com/<user>
+# patreon: moritzhuyer          # https://www.patreon.com/<user>
+# issuehunt: moritzhuyer        # Bug-Bounties für OSS-Projekte
+
+# Custom-URLs — IMMER aktiv, unabhängig vom Alter.
+# Beliebte Optionen für unter-18:
+#   • Amazon-Wunschzettel:  https://www.amazon.de/hz/wishlist/ls/<ID>
+#   • Eigene Spenden-Seite:  https://creatime.app/spenden
+#   • moritz-huyer.de/spenden (self-hosted Spendenformular)
+# Hier später echte Links einsetzen — KEIN KYC nötig.
+# custom:
+#   - https://www.amazon.de/hz/wishlist/ls/<DEINE_WISHLIST_ID>

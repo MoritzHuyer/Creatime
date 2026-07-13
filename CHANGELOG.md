@@ -5,6 +5,53 @@ Datums-Format: `YYYY-MM-DD`.
 
 ---
 
+## [v10] — 2026-07-13 · Sponsoring & Audience-Infrastruktur
+
+Da der App-Store-Launch noch warten muss (Apple Developer Program verlangt
+18+ + €99/Jahr, Payouts via Stripe/PayPal ebenfalls 18+), baue ich jetzt
+**Audience + Portfolio** auf, damit der Launch-Tag ein Event ist, kein
+Stress-Moment.
+
+### Neue Dateien
+
+- `.github/FUNDING.yml` — GitHub Sponsors + Ko-fi Slots als Platzhalter
+  (Payouts geblockt bis 18+, Slots ready-to-fill, GitHub zeigt dann
+  automatisch Buttons im Repo-Header).
+- `.github/ISSUE_TEMPLATE/bug_report.md` — standardisiertes Bug-Reporting.
+- `.github/ISSUE_TEMPLATE/feature_request.md` — standardisierte Feature-Wünsche.
+- `DEVLOG.md` — „Building Creatime in Public" — Wochenjournal mit ehrlichen
+  Status-Updates und Lessons-Learned.
+- `BUILDING_IN_PUBLIC.md` — Audience-Growth-Playbook: Channel-Liste
+  (Reddit/X/YouTube/Hacker News), Wochen- und Monats-Checklisten,
+  Launch-Vorbereitung für später, was ich NICHT mache.
+
+### Geänderte Dateien
+
+- `README.md` — Stand-Banner auf v10 aktualisiert + neue Sponsor-Section
+  + DEVLOG-Link + „Activity Ring" Line unverändert.
+- `CLAUDE.md` — Stand auf v10, neue „Audience-Building-Strategy" Section
+  mit Sponsoring-Gate-Realität (18+, Stripe/PayPal KYC).
+
+### Nicht verändert
+
+- Source-Code (`Creatime/`, `Shared/`, `CreatimeWidget/`, `Config/`)
+- Build-Konfiguration
+- Auto-Push-Workflow
+
+### Warum das eine richtige Veränderung ist
+
+1. **Audience baut sich auf, BEVOR die App live geht** — kostenloser
+   Marketing-Vorteil am Launch-Tag
+2. **Portfolio-Beweis** — Recruiter sehen GitHub-Stars + DEVLOG = seriös
+3. **Issue-Templates** strukturieren Community-Feedback von Tag 1 an
+4. **Sponsoring-Slots sind ready** — sobald ich 18 bin: 5-Min-Activation
+
+### Git
+
+- (Auto-Push folgt nach Build-Verifikation)
+
+---
+
 ## [v9] — 2026-07-13 · v7 Glass-Card Rollback
 
 Komplette Rücknahme des v8-Editorial-Hero-Redesigns.

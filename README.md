@@ -4,7 +4,7 @@ Deine tägliche Kreatin-Routine — Streak im Blick, Wasser im Blick, nichts son
 
 > Native iOS SwiftUI App · iOS 17+ · Xcode 16
 >
-> Stand: **2026-07-13 — v8 Editorial Hero Redesign**
+> Stand: **2026-07-13 — v10 Sponsoring & Audience-Infrastruktur aufgesetzt**
 
 ![App-Screenshots](docs/screenshots.png)
 
@@ -14,7 +14,7 @@ Deine tägliche Kreatin-Routine — Streak im Blick, Wasser im Blick, nichts son
 
 | | |
 |--|--|
-| 🔥 | **Editorial Streak-Hero** — riesige 96pt-Tages-Zahl, du siehst sofort wo du stehst |
+| 🔥 | **Streak-Hero** — 64pt-Tages-Zahl in Glass-Card, du siehst sofort wo du stehst |
 | 😐-🤩 | **Mood-Tagebuch** — 5 Achsen mit kleinem 7-Bar-History-Chart |
 | 💧 | **Wasser-Tracker** — Einheit frei wählbar: Liter · Gläser · Flaschen |
 | ⚡️ | **Haptisches Feedback** — iOS-native Mikros bei jedem Tap |
@@ -24,6 +24,28 @@ Deine tägliche Kreatin-Routine — Streak im Blick, Wasser im Blick, nichts son
 | 🎯 | **Activity Ring Kalender** — pro Tag: Kreatin / Wasser / Foto als Ringe |
 | 🔔 | **Smart Reminder** — Median deiner letzten 14 Tage Intake-Zeiten |
 | 💎 | **Apple Health Sync** (optional, Wasser) |
+| 📓 | **Open-Source Building-in-Public** — DEVLOG + Issue-Templates, Volle Transparenz |
+
+---
+
+## 💛 Unterstützen
+
+Creatime ist ein Open-Source-Solo-Projekt eines jungen Indie-Devs aus DE.
+
+Aktuell kann ich **noch keine direkten Spenden annehmen** — die meisten
+Plattformen (GitHub Sponsors, Ko-fi, Patreon, PayPal.Me) verlangen 18+
+wegen Stripe/PayPal-KYC. Und der App Store selbst braucht 18+ + €99/Jahr
+Apple Developer-Program.
+
+**Was du JETZT tun kannst, ohne Geld auszugeben:**
+
+- ⭐ **[GitHub Star geben](https://github.com/MoritzHuyer/Creatime/stargazers)** — kostet dich nichts, gibt Visibility.
+- 🐛 **[Issue aufmachen](https://github.com/MoritzHuyer/Creatime/issues/new/choose)** — Bug oder Feature-Wunsch.
+- 📓 **[Devlog mitlesen](./DEVLOG.md)** — was diese Woche an Creatime passiert, ehrlich & wöchentlich.
+- 🌍 **[Building-in-Public-Playbook](./BUILDING_IN_PUBLIC.md)** — meine komplette Audience-Strategie.
+
+**Sobald ich alt genug bin:** GitHub Sponsors + Ko-fi werden hier
+automatisch aktiv (Slots sind in `.github/FUNDING.yml` schon vorbereitet).
 
 ---
 

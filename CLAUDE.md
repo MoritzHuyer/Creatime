@@ -1,6 +1,6 @@
 # Creatime — Claude Code Project Memory
 
-> Stand: 2026-07-13 (v9 — v7 Glass-Card Rollback)
+> Stand: 2026-07-13 (v10 — Sponsoring & Audience-Infrastruktur aufgesetzt)
 
 iOS-SwiftUI-Habit-Tracker für tägliche Kreatin-Einnahme + Wasser-Tracking.
 
@@ -139,6 +139,53 @@ Timestamp + `git push origin main`. Noop wenn kein Remote konfiguriert.
 - Workflows: noch keine — optional später `ios-testflight-deploy.yml`
 
 ---
+
+## Audience-Building-Strategy (v10)
+
+Da App-Store-Launch erst mit 18 + €99/Jahr möglich: jetzt Audience aufbauen,
+damit Launch-Tag ein Event ist.
+
+**Hard-Fakten (verifiziert Mit-2025):**
+
+| Plattform               | Min-Alter DE | Stripe/PayPal-KYC | Echt-Payout ab 18? |
+| ----------------------- | ------------ | ----------------- | ------------------ |
+| Apple App Store         | 18+          | n/a               | AB 18 + €99/Jahr   |
+| Google Play             | 18+          | ja                | AB 18 + $25 einmal |
+| GitHub Sponsors         | 18+          | ja (Stripe Connect)| nein (unter 18)    |
+| Ko-fi                   | 18+          | ja (Stripe/PayPal) | nein (unter 18)    |
+| Open Collective         | 18+          | ja                | nein (unter 18)    |
+| PayPal.Me               | 18+          | ja (PayPal)       | nein (unter 18)    |
+| Liberapay / BMC         | 18+          | ja                | nein (unter 18)    |
+| PWA (Web-App)           | kein Gate    | n/a               | ja, immer (kein Geld, aber Audience) |
+
+**Realistischer Pfad für mich:** B (Sponsoring-Slots ready, Audience jetzt
+aufbauen) + D (€99 sparen, mit 18 launchen). Option A (PWA) als Marketing-
+Beifang möglich, nicht als Hauptpfad.
+
+### Marketing-/Store-Versionierung (wichtige Klarstellung)
+
+Das Xcode-Projekt hat aktuell `MARKETING_VERSION = 1.0` / `CURRENT_PROJECT_VERSION = 1`
+(siehe `Creatime.xcodeproj/project.pbxproj`). Die **v3/v5/v7/v8/v9/v10** in
+`CHANGELOG.md` und `DEVLOG.md` sind **interne Feature-Codes**, NICHT die
+App-Store-Versionsnummer. Beim ersten App-Store-Submit wird `MARKETING_VERSION`
+final gesetzt (typischerweise `1.0` für den Launch). Bis dahin ist die
+Versionsnummer im Binary bewusst klein gehalten.
+
+### Dateien
+
+- **`/DEVLOG.md`** — Building-in-Public-Journal (1-2/Woche eintragen)
+- **`/BUILDING_IN_PUBLIC.md`** — Channel-Liste + Wochen/Monats-Checklisten +
+  Launch-Vorbereitung für später
+- **`/.github/FUNDING.yml`** — GitHub Sponsors + Ko-fi (Platzhalter, ready für 18+)
+- **`/.github/ISSUE_TEMPLATE/`** — Bug + Feature Templates für Community
+
+### Workflow-Hinweis
+
+- **Bei jedem Code-Task:** am Ende `git add` + Commit + `git push origin main`
+- **Bei DEVLOG-Updates:** manuell Sonntags/wochenweise, kein Auto-Push
+  (außer ich pushe mit nach dem Schreiben)
+- **Bei jeder Issue-Antwort:** im Issue-Thread antworten + ggf. im DEVLOG
+  als Lessons-Learned vermerken
 
 ## Was ich NICHT anfasse
 
