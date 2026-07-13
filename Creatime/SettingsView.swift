@@ -282,15 +282,7 @@ struct SettingsView: View {
                 }
                 .padding()
             }
-            .background(LinearGradient(
-                colors: [
-                    Color(.systemIndigo).opacity(0.10),
-                    Color(.systemTeal).opacity(0.06),
-                    Color.clear
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            ))
+            .background(DynamicBackground())
             .navigationTitle("Einstellungen")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {

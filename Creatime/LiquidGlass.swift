@@ -61,6 +61,8 @@ private struct LiquidGlassShape: View {
     let cornerRadius: CGFloat
     let thickness: Thickness
 
+    @Environment(\.colorScheme) private var colorScheme
+
     enum Thickness {
         case regular   // Standard-Karten
         case thick     // Hervorhebungen (Banner, Rating-Pills)
@@ -75,15 +77,15 @@ private struct LiquidGlassShape: View {
 
     private var topHighlightOpacity: Double {
         switch thickness {
-        case .regular: return 0.35
-        case .thick:   return 0.55
+        case .regular: return colorScheme == .dark ? 0.22 : 0.35
+        case .thick:   return colorScheme == .dark ? 0.32 : 0.55
         }
     }
 
     private var strokeOpacity: Double {
         switch thickness {
-        case .regular: return 0.22
-        case .thick:   return 0.32
+        case .regular: return colorScheme == .dark ? 0.14 : 0.22
+        case .thick:   return colorScheme == .dark ? 0.20 : 0.32
         }
     }
 

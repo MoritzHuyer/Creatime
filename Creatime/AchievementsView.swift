@@ -43,16 +43,7 @@ struct AchievementsView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                LinearGradient(
-                    colors: [
-                        Color(.systemIndigo).opacity(0.10),
-                        Color(.systemTeal).opacity(0.06),
-                        Color.clear,
-                    ],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-                .ignoresSafeArea()
+                DynamicBackground()
 
                 ScrollView {
                     VStack(spacing: 22) {
