@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1024" height="1024" viewBox="0 0 1024 1024"
+     xmlns="http://www.w3.org/2000/svg">
+  <title>Creatime — Dark</title>
+  <desc>Dark variant of the Creatime app icon. Same motif, deeper background.</desc>
+
+  <defs>
+    <linearGradient id="bgDark" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1A1D33"/>
+      <stop offset="0.55" stop-color="#10122A"/>
+      <stop offset="1" stop-color="#06081C"/>
+    </linearGradient>
+    <radialGradient id="sheenDark" cx="0.32" cy="0.18" r="0.62">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.10"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="1024" height="1024" rx="225" ry="225" fill="url(#bgDark)"/>
+  <rect width="1024" height="1024" rx="225" ry="225" fill="url(#sheenDark)"/>
+
+  <g transform="rotate(-90 512 512)">
+    <circle cx="512" cy="512" r="285" fill="none"
+            stroke="#FF8C42" stroke-width="46"
+            stroke-linecap="round"
+            stroke-dasharray="1343 447"/>
+  </g>
+  <g transform="rotate(-90 512 512)" opacity="0.40">
+    <circle cx="512" cy="512" r="285" fill="none"
+            stroke="#FFC18A" stroke-width="68"
+            stroke-linecap="round"
+            stroke-dasharray="1343 447"/>
+  </g>
+
+  <g transform="translate(512, 540)">
+    <path d="M -82 -16
+             C -82 -52, -52 -68, -18 -68
+             L 60 -68
+             C 96 -68, 114 -50, 114 -16
+             L 114 28
+             C 114 72, 58 98, 14 98
+             C -52 98, -82 72, -82 28 Z"
+          fill="#FFFFFF"/>
+    <path d="M -52 -42
+             C -38 -52, -18 -58, -2 -56
+             L -52 -28 Z"
+          fill="#FFFFFF" opacity="0.55"/>
+  </g>
+</svg>

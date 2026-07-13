@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- MARK: - Standard CFBundle-Keys (von Xcode erwartet) -->
+    <key>CFBundleDevelopmentRegion</key>
+    <string>en</string>
+    <key>CFBundleDisplayName</key>
+    <string>Creatime</string>
+    <key>CFBundleExecutable</key>
+    <string>$(EXECUTABLE_NAME)</string>
+    <key>CFBundleIdentifier</key>
+    <string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
+    <key>CFBundleName</key>
+    <string>$(PRODUCT_NAME)</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleShortVersionString</key>
+    <string>$(MARKETING_VERSION)</string>
+    <key>CFBundleVersion</key>
+    <string>$(CURRENT_PROJECT_VERSION)</string>
+
+    <!-- MARK: - Plattform-Capabilities -->
+    <key>LSRequiresIPhoneOS</key>
+    <true/>
+
+    <!-- MARK: - Live Activities -->
+    <!-- DYNAMISCH: dynamische Island + Lock-Screen-Banner -->
+    <key>NSSupportsLiveActivities</key>
+    <true/>
+    <key>NSSupportsLiveActivitiesFrequentUpdates</key>
+    <true/>
+
+    <!-- MARK: - HealthKit Usage-Descriptions -->
+    <key>NSHealthShareUsageDescription</key>
+    <string>Creatime liest keine Gesundheitsdaten.</string>
+    <key>NSHealthUpdateUsageDescription</key>
+    <string>Creatime kann dein getrunkenes Wasser in Apple Health speichern.</string>
+
+    <!-- MARK: - App-Icon (ADAPTIVE, kein CFBundleAlternateIcons mehr)
+         Wir nutzen den modernen Asset-Catalog-only-Ansatz:
+         Ein einziges AppIcon.appiconset mit drei `appearances`-getaggten
+         PNG-Einträgen (Default / Dark / Tinted). iOS wählt automatisch
+         die richtige Variante, je nach:
+           • System-Erscheinungsbild (Default ↔ Dark)
+           • Home-Screen-Stil des Users (Tinted auf iOS 18+)
+         KEIN `setAlternateIconName`, KEIN manueller Switch in den
+         Settings mehr. Liquid-Glass-Overlay rendert iOS selbst oben drauf.
+         CFBundleIconFiles wurde ebenfalls bewusst weggelassen — es würde
+         iOS anweisen, am Bundle-Root nach ~AppIcon.png zu suchen, was
+         es nicht gibt. -->
+    <key>CFBundleIcons</key>
+    <dict>
+        <key>CFBundlePrimaryIcon</key>
+        <dict>
+            <key>CFBundleIconName</key>
+            <string>AppIcon</string>
+        </dict>
+    </dict>
+
+    <!-- iPad-Familie (auch wenn aktuell nur iPhone-Target — Zukunftssicherheit). -->
+    <key>CFBundleIcons~ipad</key>
+    <dict>
+        <key>CFBundlePrimaryIcon</key>
+        <dict>
+            <key>CFBundleIconName</key>
+            <string>AppIcon</string>
+        </dict>
+    </dict>
+
+    <!-- MARK: - App-Icon Shortcuts (Long-Press auf App-Icon) -->
+    <!-- Die IDs MÜSSEN mit `QuickActionType.rawValue` in
+         Creatime/QuickActions.swift matchen, sonst findet der
+         CreatimeAppDelegate das Item nicht und ignoriert es.
+         type ist der Identifier, mit dem wir in QuickActions.swift
+         den Dispatch machen. -->
+    <key>UIApplicationShortcutItems</key>
+    <array>
+        <dict>
+            <key>UIApplicationShortcutItemType</key>
+            <string>creatime.shortcut.mark</string>
+            <key>UIApplicationShortcutItemTitle</key>
+            <string>Kreatin markieren</string>
+            <key>UIApplicationShortcutItemIconType</key>
+            <string>UIApplicationShortcutIconTypeSymbol</string>
+            <key>UIApplicationShortcutItemIconSymbolName</key>
+            <string>checkmark.circle.fill</string>
+        </dict>
+        <dict>
+            <key>UIApplicationShortcutItemType</key>
+            <string>creatime.shortcut.water</string>
+            <key>UIApplicationShortcutItemTitle</key>
+            <string>Wasser eintragen</string>
+            <key>UIApplicationShortcutItemSubtitle</key>
+            <string>+ 250 ml</string>
+            <key>UIApplicationShortcutItemIconType</key>
+            <string>UIApplicationShortcutIconTypeSymbol</string>
+            <key>UIApplicationShortcutItemIconSymbolName</key>
+            <string>drop.fill</string>
+        </dict>
+        <dict>
+            <key>UIApplicationShortcutItemType</key>
+            <string>creatime.shortcut.ask</string>
+            <key>UIApplicationShortcutItemTitle</key>
+            <string>Wie ist meine Streak?</string>
+            <key>UIApplicationShortcutItemIconType</key>
+            <string>UIApplicationShortcutIconTypeSymbol</string>
+            <key>UIApplicationShortcutItemIconSymbolName</key>
+            <string>flame.fill</string>
+        </dict>
+    </array>
+
+    <!-- MARK: - Scene / Launch / Orientation -->
+    <key>UIApplicationSceneManifest</key>
+    <dict>
+        <key>UIApplicationSupportsMultipleScenes</key>
+        <true/>
+    </dict>
+    <key>UILaunchScreen</key>
+    <dict/>
+    <key>UISupportedInterfaceOrientations</key>
+    <array>
+        <string>UIInterfaceOrientationPortrait</string>
+    </array>
+</dict>
+</plist>

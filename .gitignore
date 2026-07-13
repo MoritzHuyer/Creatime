@@ -1,0 +1,66 @@
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# Creatime — iOS Xcode Project Gitignore
+# Generiert 2026-07-13 als Teil des v8 + GitHub-Setup.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+# macOS trash
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Editing debris
+*.swp
+*.swo
+*~
+*.bak
+*.tmp
+
+# Xcode user-specific state
+*.xcuserdata/
+*.xcworkspace/xcuserdata/
+*.xcodeproj/xcuserdata/
+*.xcodeproj/project.xcworkspace/xcuserdata/
+*.moved-aside
+*.pbxproj.bak.*
+*.pbxproj.bak
+
+# Xcode build output
+DerivedData/
+build/
+Build/
+*.xcarchive
+*.dSYM.zip
+*.dSYM
+
+# Swift Package Manager
+.swiftpm/
+.build/
+.swift-version
+Package.resolved
+
+# CocoaPods (falls je hinzukommt)
+Pods/
+
+# Carthage
+Carthage/Build/
+Carthage/Checkouts/
+
+# Fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/**/*.png
+fastlane/test_output
+
+# Tools
+.vscode/
+.idea/
+
+# Persönliche Notizen / Verzeichnisse neben Projekt
+.obsidian/
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# Behalte diese Pfade IMMER im Repo:
+# - Config/ (entitlements + Info.plist)
+# - Creatime/, Shared/, CreatimeWidget/, CreatimeTests/
+# - Creatime.xcodeproj/ (außer xcuserdata, siehe oben)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

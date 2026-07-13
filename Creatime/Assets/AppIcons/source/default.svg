@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1024" height="1024" viewBox="0 0 1024 1024"
+     xmlns="http://www.w3.org/2000/svg">
+  <title>Creatime — Default</title>
+  <desc>App icon for Creatime. Verb-noun plea-tracking app with Liquid-Glass aesthetic.</desc>
+
+  <defs>
+    <!-- Blau-Lila Hintergrund-Gradient (top → bottom). -->
+    <linearGradient id="bgDefault" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#5B7FFF"/>
+      <stop offset="0.55" stop-color="#7C6EF0"/>
+      <stop offset="1" stop-color="#9774E8"/>
+    </linearGradient>
+    <!-- Liquid-Glass Sheen: oben-links heller Highlight, rechts/unten weicher. -->
+    <radialGradient id="sheen" cx="0.32" cy="0.18" r="0.62">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- iOS Squircle Background (rx=225 ≈ 22% radius, App-Icon-Mask-compatible). -->
+  <rect width="1024" height="1024" rx="225" ry="225" fill="url(#bgDefault)"/>
+  <rect width="1024" height="1024" rx="225" ry="225" fill="url(#sheen)"/>
+
+  <!-- Oranger Progress-Ring: ca. 75 % Bogen, Lücke unten.
+       rotate(-90 512 512) → Startpunkt der Strich-Lücke wandert auf 12-Uhr,
+       so dass die Lücke unten liegt.
+       circumference = 2π · 285 ≈ 1790; 75% = 1343; 25% gap = 447. -->
+  <g transform="rotate(-90 512 512)">
+    <circle cx="512" cy="512" r="285" fill="none"
+            stroke="#FF8C42" stroke-width="46"
+            stroke-linecap="round"
+            stroke-dasharray="1343 447"/>
+  </g>
+  <!-- Sanftes Glow hinter dem Ring. -->
+  <g transform="rotate(-90 512 512)" opacity="0.32">
+    <circle cx="512" cy="512" r="285" fill="none"
+            stroke="#FFC18A" stroke-width="62"
+            stroke-linecap="round"
+            stroke-dasharray="1343 447"/>
+  </g>
+
+  <!-- Kreatin-Scoop: weißer, leicht tropfenförmiger Bowl, mittig. -->
+  <g transform="translate(512, 540)">
+    <path d="M -82 -16
+             C -82 -52, -52 -68, -18 -68
+             L 60 -68
+             C 96 -68, 114 -50, 114 -16
+             L 114 28
+             C 114 72, 58 98, 14 98
+             C -52 98, -82 72, -82 28 Z"
+          fill="#FFFFFF"/>
+    <!-- kleiner Highlight oben links am Scoop für 3D-Anmutung -->
+    <path d="M -52 -42
+             C -38 -52, -18 -58, -2 -56
+             L -52 -28 Z"
+          fill="#FFFFFF" opacity="0.50"/>
+  </g>
+</svg>
