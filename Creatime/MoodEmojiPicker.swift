@@ -1,26 +1,20 @@
 import SwiftUI
 
-// MARK: - Mood-Emoji-Reihe (Editorial-light)
+// MARK: - Mood-Emoji-Reihe (v7 — Glass-Card)
 //
-// Bewusst OHNE .regularMaterial-Card-Rahmen — schwebt zwischen Hero-
-// Streak und Wochenübersicht. Auswahl wird durch einen kleinen Punkt
-// unter dem Emoji markiert (subtiler als vorher der große gefüllte
-// Hintergrund-Circle).
-//
-// 5 Emojis reichen — decken neutral / gut / euphorisch / gestresst / müde
-// ab. Auswahl wird mit `Haptics.tap()` quittiert (in TodayView wired).
+// Glass-Card mit 5 Emojis, gewrappt in `.padding(.horizontal, -8)` damit
+// die Reihe edge-to-edge schwebt (sonst hätte die Card einen Innenrand).
+// Auswahl wird mit gefülltem Circle hinter dem Emoji markiert.
 
 struct MoodEmojiPicker: View {
     @Environment(CreatineStore.self) private var store
 
-    /// Die 5 Optionen + Labels. Reihenfolge wichtig: links = neutral,
-    /// rechts = euphorisch.
     private static let moods: [(emoji: String, label: String, key: String)] = [
-        ("😐", "Neutral",  "neutral"),
-        ("😊", "Gut",      "good"),
-        ("🤩", "Top",      "great"),
-        ("🥵", "Stress",   "stressed"),
-        ("😴", "Müde",     "tired"),
+        ("😐", "Schlecht", "neutral"),
+        ("😊", "OK",      "good"),
+        ("🤩", "Gut",     "great"),
+        ("🥵", "Stress",  "stressed"),
+        ("😴", "Erledigt", "tired"),
     ]
 
     private var selectedMood: String? {
@@ -29,14 +23,13 @@ struct MoodEmojiPicker: View {
 
     var body: some View {
         VStack(spacing: 10) {
-            // Mikro-Caption — kleiner, leichter als vorher. Akzent nur bei
-            // aktiver Auswahl — sonst schweigsam im Hintergrund.
-            Text(selectedMood == nil ? "STIMMUNG" : "STIMMUNG HEUTE")
-                .font(.caption2.weight(.semibold))
-                .tracking(1.2)
-                .foregroundStyle(.tertiary)
+            HStack {
+                Label("Wie geht's dir heute?", systemImage: "face.smiling")
+                    .font(.subheadline.bold())
+                Spacer()
+            }
 
-            HStack(spacing: 12) {
+            HStack(spacing: 6) {
                 ForEach(Self.moods, id: \.key) { mood in
                     Button {
                         Haptics.tap()
@@ -44,17 +37,18 @@ struct MoodEmojiPicker: View {
                     } label: {
                         VStack(spacing: 4) {
                             Text(mood.emoji)
-                                .font(.system(size: 32))
-                                .opacity(selectedMood == mood.key ? 1 : 0.45)
-                            // kleiner Punkt als Selekt-Indikator statt
-                                // großem gefülltem Circle — viel ruhiger.
-                            Circle()
-                                .fill(Color.accentColor)
-                                .frame(width: 4, height: 4)
-                                .opacity(selectedMood == mood.key ? 1 : 0)
+                                .font(.system(size: 30))
+                                .frame(width: 44, height: 44)
+                                .background(
+                                    Circle()
+                                        .fill(selectedMood == mood.key ? Color.cyan.opacity(0.20) : Color.clear)
+                                )
+                            Text(mood.label)
+                                .font(.caption2)
+                                .foregroundStyle(selectedMood == mood.key ? .primary : .secondary)
                         }
-                        .frame(width: 44, height: 56)
-                        .scaleEffect(selectedMood == mood.key ? 1.05 : 1.0)
+                        .frame(maxWidth: .infinity)
+                        .scaleEffect(selectedMood == mood.key ? 1.06 : 1.0)
                         .animation(.snappy, value: selectedMood)
                     }
                     .buttonStyle(.plain)
@@ -63,7 +57,10 @@ struct MoodEmojiPicker: View {
                 }
             }
         }
-        .frame(maxWidth: .infinity)
+        .padding(14)
+        // Edge-to-edge-bleed: der v7-Hack, damit die Emojis die volle
+        // Card-Breite nutzen statt eingequetscht zu wirken.
+        .padding(.horizontal, -8)
     }
 }
 

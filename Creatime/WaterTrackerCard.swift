@@ -1,17 +1,13 @@
 import SwiftUI
 
-// MARK: - Wasser-Compact-Strip (Editorial — eine Zeile)
+// MARK: - WasserTrackerCard (v7 — volle Glass-Card)
 //
-// Statt der vorherigen dicken Karte (Header + Progress + 42pt-Hero + 5er-
-// Button-Reihe + Customize-Link) liegt das Wasser jetzt auf einer einzigen
-// ruhigen Linie:
-//
-//   💧  1,25 L  ───●─────●───  2,5 L           [−] [+250] [+500] [+1L]
-//
-// Alles auf einer Höhe. Der Progressbalken liegt UNTER der Linie. Die
-// Quick-Buttons sind kleinen iOS-Style-Buttons, kein zweites Hero. Die
-// Goal-Anpassung und das Anpassen der Quick-Größen sind nach Settings
-// gewandert (siehe SettingsView).
+// Volle Karte mit allen 5 UI-Sektionen:
+//   1. Header "Wasser heute" + Tropfen-Icon + CustomizeLink
+//   2. Goal-Row Text "X von Y ml"
+//   3. Progress-Bar (dick)
+//   4. HeroNumber "1,7 L" (groß)
+//   5. Action-Row: − step / +250 / +500 / +1L
 
 struct WaterTrackerCard: View {
     @Environment(WaterStore.self) private var water
@@ -67,43 +63,61 @@ struct WaterTrackerCard: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            // Eine ruhige Zeile: Label · BigNumber · Goal · Aktionen
-            HStack(alignment: .center, spacing: 12) {
-                Label {
-                    Text("Wasser")
-                        .font(.caption.weight(.semibold))
-                        .tracking(1.2)
-                        .foregroundStyle(.tertiary)
-                } icon: {
-                    Image(systemName: water.goalMode.symbol)
-                        .foregroundStyle(.blue)
-                        .font(.subheadline)
-                }
-                .labelStyle(.titleAndIcon)
-
+        VStack(alignment: .leading, spacing: 14) {
+            // 1) Header
+            HStack {
+                Label("Wasser heute", systemImage: "drop.fill")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.primary)
                 Spacer()
-
-                Text("\(localizedNumber(water.todayAmountInUnits))/\(localizedNumber(water.dailyGoalInUnits)) \(water.goalMode.displayName)")
-                    .font(.subheadline.monospacedDigit())
-                    .foregroundStyle(.secondary)
+                NavigationLink {
+                    WaterGoalSheet()
+                        .presentationDetents([.medium])
+                } label: {
+                    Label("Anpassen", systemImage: "slider.horizontal.3")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(Color.accentColor)
+                }
             }
 
-            // ProgressBar — schmal, dezent.
-            WaterProgressBar(
-                progress: water.todayProgress,
-                tint: water.goalReachedToday ? .green : .blue
-            )
-            .frame(height: 4)
+            // 2) Goal-Row
+            HStack(alignment: .firstTextBaseline) {
+                Text("\(water.todayAmount)")
+                    .font(.system(.title2, design: .rounded).weight(.bold))
+                    .foregroundStyle(.primary)
+                    .contentTransition(.numericText())
+                Text("von \(water.dailyGoal) ml")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                Spacer()
+                if water.goalReachedToday {
+                    Label("Ziel erreicht", systemImage: "checkmark.circle.fill")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.green)
+                }
+            }
 
-            // ActionRow: [- step]  [Quick-Buttons ...]
+            // 3) Progress-Bar (dicker)
+            ProgressView(value: min(1.0, water.todayProgress))
+                .progressViewStyle(.linear)
+                .tint(water.goalReachedToday ? .green : .blue)
+                .scaleEffect(x: 1, y: 1.6, anchor: .center)
+
+            // 4) HeroNumber
+            Text("\(localizedNumber(Double(water.todayAmount) / 1000)) L")
+                .font(.system(size: 42, weight: .bold, design: .rounded))
+                .foregroundStyle(.blue)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentTransition(.numericText())
+
+            // 5) Action-Row
             HStack(spacing: 8) {
                 Button {
                     add(-stepAmount)
                 } label: {
                     Image(systemName: "minus")
                         .font(.subheadline.weight(.semibold))
-                        .frame(width: 38, height: 38)
+                        .frame(width: 44, height: 44)
                 }
                 .buttonStyle(.bordered)
                 .clipShape(Circle())
@@ -116,11 +130,11 @@ struct WaterTrackerCard: View {
                     } label: {
                         Text("+\(amount)")
                             .font(.footnote.weight(.semibold))
-                            .frame(minWidth: 56, minHeight: 38)
+                            .frame(maxWidth: .infinity, minHeight: 44)
                     }
                     .buttonStyle(.borderedProminent)
                     .tint(.blue)
-                    .controlSize(.small)
+                    .controlSize(.regular)
                     .accessibilityLabel("\(amount) ml hinzufügen")
                     .accessibilityHint("Halte gedrückt, um mehrere Portionen schnell zu addieren.")
                     .onLongPressGesture(
@@ -132,17 +146,28 @@ struct WaterTrackerCard: View {
                     )
                 }
 
-                Spacer(minLength: 0)
-
-                if water.goalReachedToday {
-                    Label("Ziel erreicht", systemImage: "checkmark.circle.fill")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.green)
+                Button {
+                    add(1000)
+                } label: {
+                    Text("+1 L")
+                        .font(.footnote.weight(.semibold))
+                        .frame(maxWidth: .infinity, minHeight: 44)
                 }
+                .buttonStyle(.borderedProminent)
+                .tint(.cyan)
+                .controlSize(.regular)
+                .accessibilityLabel("1000 ml hinzufügen")
+                .onLongPressGesture(
+                    minimumDuration: 0.4,
+                    perform: { startBoost(1000) },
+                    onPressingChanged: { isPressing in
+                        if !isPressing { stopBoost() }
+                    }
+                )
             }
         }
         .padding(16)
-        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 18))
+        .liquidGlassCard()
         .onChange(of: water.goalReachedToday) { _, isReached in
             if isReached {
                 sounds.playGoalReached()
@@ -151,28 +176,7 @@ struct WaterTrackerCard: View {
     }
 }
 
-// MARK: - Wasser-Progressbar (sehr dezent, 4pt hoch)
-
-private struct WaterProgressBar: View {
-    let progress: Double
-    let tint: Color
-
-    var body: some View {
-        GeometryReader { geo in
-            ZStack(alignment: .leading) {
-                Capsule()
-                    .fill(Color(.tertiarySystemFill))
-                Capsule()
-                    .fill(tint)
-                    .frame(width: max(4, geo.size.width * progress))
-            }
-        }
-    }
-}
-
 // MARK: - Sheet zum Einstellen des Tagesziels
-// (Bleibt für die GoalSheet-Kompatibilität, aber wird im neuen Design
-// nur noch aus SettingsView aufgerufen.)
 
 struct WaterGoalSheet: View {
     @Environment(WaterStore.self) private var water

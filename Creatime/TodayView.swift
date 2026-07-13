@@ -1,22 +1,23 @@
 import SwiftUI
 import UIKit
 
-// MARK: - Heute-Tab (Editorial-Hero-Stil)
+// MARK: - Heute-Tab (v7 — Glass-Card-Stil)
 //
-// Layout-Philosophie: ein Hero-Block mit der Streak-Zahl dominiert den
-// oberen Bereich. ALLES andere — Mood-Emoji, Wasser, Hauptaktion —
-// ordnet sich darunter an, mit großzügigem Abstand statt Karten-Ballung.
+// Layout-Philosophie: klare Gliederung in 7–8 Karten mit großzügigem
+// Abstand (22pt). Jede Karte nutzt `.liquidGlassCard()` als Hintergrund.
 //
-// Reihenfolge (visuelle Hierarchie, von groß nach klein):
-//   1. Vacation-Banner (selten, kompakt)
-//   2. HERO-Streak: 🔥 + riesige Zahl + "Tage in Folge"
-//   3. Mood-Emoji-Reihe (inline, kein Card-Rahmen)
-//   4. Wochenübersicht (kompakt, inline)
-//   5. Recovery-Buddy (nur wenn getriggert — soft inline)
-//   6. GROSSE Hauptaktion (full-width, prominent)
-//   7. Pause / Freeze Link (typografisch klein)
-//   8. Wasser kompakt — eine Zeile mit Inline-Aktionen
-//   9. Reminder-Footer (sehr klein)
+// Reihenfolge (von oben nach unten):
+//   1. Vacation-Banner (nur wenn aktiv)
+//   2. Streak-Karte (🔥 + 64pt-Zahl + "Tage in Folge")
+//   3. Mood-Emoji-Reihe (5 Emojis + Labels in Glass-Card)
+//   4. Wochenübersicht (7 Kreise für letzte 7 Tage)
+//   5. Recovery-Buddy-Card (nur wenn getriggert, pink Glass)
+//   6. Großer Hauptbutton ("Kreatin genommen", 60pt)
+//   7. Pause/Freeze Menu (typografisch klein)
+//   8. WasserTrackerCard (volle Glass-Karte)
+//   9. Tip-of-the-Day Card
+//  10. Reminder-Zeit-Chip (klein, am Foot)
+
 struct TodayView: View {
 
     @Environment(CreatineStore.self) private var store
@@ -30,56 +31,74 @@ struct TodayView: View {
     @State private var showVacationSheet = false
     @State private var showSettings = false
     @State private var confettiTrigger = false
+    @State private var confettiOnboardingTrigger = false
 
     private var reminderTimeText: String {
         String(format: "%02d:%02d", reminderHour, reminderMinute)
     }
 
+    /// Ein Tipp pro Tag: Die Nummer des Tages im Jahr (1–366) bestimmt,
+    /// welcher Tipp dran ist — so wechselt er automatisch täglich.
+    private var dailyTip: String {
+        let dayOfYear = Calendar.current.ordinality(of: .day, in: .year, for: Date()) ?? 0
+        return Self.tips[dayOfYear % Self.tips.count]
+    }
+
+    private static let tips: [String] = [
+        "Konstanz schlägt Timing: Die Uhrzeit ist fast egal, Hauptsache jeden Tag.",
+        "Kreatin braucht 2–4 Wochen, bis der Speicher voll ist.",
+        "3–5 g pro Tag reichen völlig aus — mehr bringt keinen zusätzlichen Effekt.",
+        "Trink genügend Wasser — Kreatin zieht Wasser in die Muskelzellen.",
+        "Verbinde Kreatin mit einer festen Routine, z. B. direkt zum Frühstück.",
+    ]
+
     var body: some View {
         NavigationStack {
             ZStack {
-                // Editorial = ruhiger Hintergrund. Kein knalliger Gradient,
-                // der mit den Karten konkurriert. Sanftes systemGrouped.
-                Color(.systemGroupedBackground).ignoresSafeArea()
+                LinearGradient(
+                    colors: [
+                        Color(.systemIndigo).opacity(0.10),
+                        Color(.systemTeal).opacity(0.06),
+                        Color.clear,
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                .ignoresSafeArea()
 
                 ScrollView {
-                    VStack(spacing: 0) {
+                    VStack(spacing: 22) {
 
-                        vacationBanner
+                        if store.vacationEnabled, let until = store.vacationUntil {
+                            VacationBanner(until: until) {
+                                showVacationSheet = true
+                            }
+                            .transition(.move(edge: .top).combined(with: .opacity))
+                        }
 
-                        // HERO-Streak — das visuelle Zentrum.
-                        heroStreak
-                            .padding(.top, 12)
+                        streakCard
 
-                        // Mood-Reihe — kein Card-Rahmen mehr, einfach 5 Emojis.
                         MoodEmojiPicker()
-                            .padding(.top, 28)
+                            .liquidGlassCard()
 
-                        // Wochenübersicht — bleibt kompakt, inline.
                         WeekOverview()
-                            .padding(.top, 28)
+                            .liquidGlassCard()
 
-                        // Recovery-Buddy — nur wenn getriggert.
                         RecoveryBuddyCard(action: markAsTaken)
-                            .padding(.top, 8)
+                            .liquidGlassCard()
 
-                        // Hauptaktion — groß, einheitlich 60pt hoch.
                         mainActionButton
-                            .padding(.top, 32)
 
-                        // Pause/Freeze — kleines typografisches Menü.
                         pauseControl
-                            .padding(.top, 8)
 
-                        // Wasser — kompakter Strip statt voller Karte.
                         WaterTrackerCard()
-                            .padding(.top, 36)
 
-                        // Reminder-Footer.
+                        TipCard(tip: dailyTip)
+                            .liquidGlassCard()
+
                         reminderFooter
-                            .padding(.top, 28)
                     }
-                    .padding(.horizontal, 20)
+                    .padding(.horizontal, 16)
                     .padding(.bottom, 32)
                     .frame(maxWidth: .infinity)
                     .animation(.snappy, value: store.vacationEnabled)
@@ -87,6 +106,8 @@ struct TodayView: View {
 
                 ConfettiView(trigger: confettiTrigger)
             }
+            .navigationTitle("Heute")
+            .navigationBarTitleDisplayMode(.large)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
@@ -98,8 +119,6 @@ struct TodayView: View {
                     .accessibilityLabel("Einstellungen öffnen")
                 }
             }
-            .navigationTitle("Heute")
-            .navigationBarTitleDisplayMode(.inline)
             .task { @MainActor in
                 await pushLiveActivityUpdate()
             }
@@ -135,55 +154,23 @@ struct TodayView: View {
         }
     }
 
-    // MARK: - Vacation Banner (sehr kompakt, kein Card-Look)
+    // MARK: - Streak-Karte (Glass-Card)
 
-    @ViewBuilder
-    private var vacationBanner: some View {
-        if store.vacationEnabled, let until = store.vacationUntil {
-            Button {
-                showVacationSheet = true
-            } label: {
-                HStack(spacing: 8) {
-                    Image(systemName: "palm.tree.fill")
-                        .foregroundStyle(.teal)
-                        .font(.subheadline)
-                    Text("Urlaubsmodus bis \(until, format: .dateTime.day().month(.abbreviated))")
-                        .font(.subheadline.weight(.medium))
-                    Spacer()
-                    Image(systemName: "chevron.right")
-                        .font(.caption2)
-                        .foregroundStyle(.tertiary)
-                }
-                .padding(.horizontal, 14)
-                .padding(.vertical, 10)
-                .background(Color(.tertiarySystemFill), in: Capsule())
-                .foregroundStyle(.primary)
-            }
-            .buttonStyle(.plain)
-            .transition(.move(edge: .top).combined(with: .opacity))
-        }
-    }
-
-    // MARK: - HERO STREAK
-
-    private var heroStreak: some View {
-        VStack(spacing: 4) {
+    private var streakCard: some View {
+        VStack(spacing: 6) {
             Text("🔥")
-                .font(.system(size: 56))
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text("\(store.currentStreak)")
-                    .font(.system(size: 96, weight: .bold, design: .rounded))
-                    .contentTransition(.numericText())
-                    .monospacedDigit()
-                Text("Tage")
-                    .font(.title.weight(.medium))
-                    .foregroundStyle(.secondary)
-            }
-            Text("in Folge")
-                .font(.subheadline)
-                .foregroundStyle(.tertiary)
+                .font(.system(size: 48))
+            Text("\(store.currentStreak)")
+                .font(.system(size: 64, weight: .bold, design: .rounded))
+                .contentTransition(.numericText())
+                .monospacedDigit()
+            Text("Tage in Folge")
+                .font(.subheadline.weight(.medium))
+                .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity)
+        .padding(.vertical, 18)
+        .liquidGlassCard()
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(store.currentStreak) Tage Streak in Folge")
     }
@@ -195,7 +182,7 @@ struct TodayView: View {
         if store.skippedToday {
             Button {} label: {
                 Label("Heute pausiert", systemImage: "pause.circle.fill")
-                    .font(.body.weight(.semibold))
+                    .font(.title3.weight(.semibold))
                     .frame(maxWidth: .infinity)
                     .frame(height: 60)
             }
@@ -204,8 +191,8 @@ struct TodayView: View {
             .disabled(true)
         } else if store.takenToday {
             Button {} label: {
-                Label("Heute erledigt", systemImage: "checkmark.circle.fill")
-                    .font(.body.weight(.semibold))
+                Label("Heute erledigt ✓", systemImage: "checkmark.circle.fill")
+                    .font(.title3.weight(.semibold))
                     .frame(maxWidth: .infinity)
                     .frame(height: 60)
             }
@@ -215,7 +202,7 @@ struct TodayView: View {
         } else {
             Button(action: markAsTaken) {
                 Label("Kreatin genommen", systemImage: "checkmark.circle")
-                    .font(.body.weight(.semibold))
+                    .font(.title3.weight(.semibold))
                     .frame(maxWidth: .infinity)
                     .frame(height: 60)
             }
@@ -224,7 +211,8 @@ struct TodayView: View {
         }
     }
 
-    /// Pause/Freeze — explicit klein, typografisch. Kein zweite Button-Reihe.
+    // MARK: - Pause/Freeze Menu
+
     @ViewBuilder
     private var pauseControl: some View {
         if store.untouchedToday {
@@ -249,40 +237,44 @@ struct TodayView: View {
                 }
             } label: {
                 HStack(spacing: 6) {
-                    Image(systemName: "pause.circle")
-                        .font(.caption)
+                    Image(systemName: "ellipsis.circle")
                     Text("Heute pausieren oder einfrieren")
-                        .font(.footnote)
+                        .font(.footnote.weight(.medium))
                 }
                 .foregroundStyle(.secondary)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 8)
+                .background(Color(.tertiarySystemFill), in: Capsule())
             }
-            .buttonStyle(.plain)
         }
     }
 
-    // MARK: - Reminder-Footer
+    // MARK: - Reminder-Footer-Chip
 
     private var reminderFooter: some View {
         Button {
             showTimeSheet = true
         } label: {
-            HStack(spacing: 4) {
-                Image(systemName: "bell")
+            HStack(spacing: 6) {
+                Image(systemName: "bell.fill")
                     .font(.caption2)
                 Text("Erinnerung um \(reminderTimeText) Uhr")
                     .font(.caption)
             }
-            .foregroundStyle(.tertiary)
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 8)
+            .background(Color(.tertiarySystemFill), in: Capsule())
         }
         .buttonStyle(.plain)
-        .frame(maxWidth: .infinity)
+        .accessibilityLabel("Erinnerungszeit ändern, aktuell \(reminderTimeText) Uhr")
     }
 
     // MARK: - Aktionen
 
     private func markAsTaken() {
         withAnimation {
-            if let achievement = store.markTodayAsTaken() {
+            if let _ = store.markTodayAsTaken() {
                 Haptics.successHeavy()
                 sounds.playCreatineMark()
                 confettiTrigger = true
@@ -290,7 +282,6 @@ struct TodayView: View {
                     try? await Task.sleep(for: .milliseconds(100))
                     confettiTrigger = false
                 }
-                _ = achievement
             } else {
                 Haptics.success()
                 sounds.playCreatineMark()
@@ -300,14 +291,13 @@ struct TodayView: View {
                     confettiTrigger = false
                 }
             }
-            if let onboarding = store.celebrateOnboardingIfFirstTake() {
+            if let _ = store.celebrateOnboardingIfFirstTake() {
                 Haptics.successHeavy()
-                confettiOnboardingTrigger.toggle()
+                confettiOnboardingTrigger = true
                 Task {
                     try? await Task.sleep(for: .milliseconds(100))
                     confettiOnboardingTrigger = false
                 }
-                _ = onboarding
             }
         }
         rescheduleNotifications()
@@ -325,8 +315,6 @@ struct TodayView: View {
         }
         rescheduleNotifications()
     }
-
-    @State private var confettiOnboardingTrigger = false
 
     private func skipToday() {
         guard store.canSkipToday else { return }
@@ -357,57 +345,92 @@ struct TodayView: View {
     }
 }
 
-// MARK: - Wochenübersicht (Editorial — klein, inline, dezent)
+// MARK: - Wochenübersicht (Glass-Card-Inhalt)
 
 struct WeekOverview: View {
     @Environment(CreatineStore.self) private var store
 
     var body: some View {
-        // Sehr kompakte Take-Streak Indicators. Kein eigener Card-Rahmen
-        // mehr — schweben einfach zwischen Hero und Aktion.
-        HStack(spacing: 14) {
-            ForEach(0..<7, id: \.self) { index in
-                let daysBack = 6 - index
-                let day = Calendar.current.date(byAdding: .day, value: -daysBack, to: Date()) ?? Date()
-                let taken = store.isTaken(day)
-                let skipped = store.isSkipped(day)
+        VStack(alignment: .leading, spacing: 10) {
+            Label("Diese Woche", systemImage: "calendar")
+                .font(.caption.bold())
+                .foregroundStyle(.secondary)
 
-                VStack(spacing: 6) {
-                    Text(day, format: .dateTime.weekday(.narrow))
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
+            HStack(spacing: 10) {
+                ForEach(0..<7, id: \.self) { index in
+                    let daysBack = 6 - index
+                    let day = Calendar.current.date(byAdding: .day, value: -daysBack, to: Date()) ?? Date()
+                    let taken = store.isTaken(day)
+                    let skipped = store.isSkipped(day)
+                    let frozen = store.isFrozen(day)
 
-                    ZStack {
-                        Circle()
-                            .fill(fillColor(taken: taken, skipped: skipped))
-                            .frame(width: 26, height: 26)
+                    VStack(spacing: 6) {
+                        Text(day, format: .dateTime.weekday(.narrow))
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
 
-                        if taken {
-                            Image(systemName: "checkmark")
-                                .font(.caption2.bold())
-                                .foregroundStyle(.white)
-                        } else if skipped {
-                            Image(systemName: "pause.fill")
-                                .font(.caption2.bold())
-                                .foregroundStyle(.white)
-                        }
-
-                        if daysBack == 0 {
+                        ZStack {
                             Circle()
-                                .stroke(Color.accentColor, lineWidth: 1.5)
+                                .fill(fillColor(taken: taken, skipped: skipped, frozen: frozen))
                                 .frame(width: 30, height: 30)
+
+                            if taken {
+                                Image(systemName: "checkmark")
+                                    .font(.caption.bold())
+                                    .foregroundStyle(.white)
+                            } else if skipped {
+                                Image(systemName: "pause.fill")
+                                    .font(.caption.bold())
+                                    .foregroundStyle(.white)
+                            } else if frozen {
+                                Image(systemName: "snowflake")
+                                    .font(.caption.bold())
+                                    .foregroundStyle(.white)
+                            }
+
+                            if daysBack == 0 {
+                                Circle()
+                                    .stroke(Color.accentColor, lineWidth: 1.5)
+                                    .frame(width: 34, height: 34)
+                            }
                         }
                     }
+                    .frame(maxWidth: .infinity)
                 }
             }
         }
-        .frame(maxWidth: .infinity)
+        .padding(14)
     }
 
-    private func fillColor(taken: Bool, skipped: Bool) -> Color {
+    private func fillColor(taken: Bool, skipped: Bool, frozen: Bool) -> Color {
         if taken { return .green }
+        if frozen { return .cyan }
         if skipped { return .orange }
         return Color(.tertiarySystemFill)
+    }
+}
+
+// MARK: - Tip-of-the-Day (Glass-Card-Inhalt)
+
+struct TipCard: View {
+    let tip: String
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: "lightbulb.fill")
+                .foregroundStyle(.yellow)
+                .font(.title3)
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Tipp des Tages")
+                    .font(.caption.bold())
+                    .foregroundStyle(.secondary)
+                Text(tip)
+                    .font(.subheadline)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(14)
     }
 }
 

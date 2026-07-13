@@ -1,17 +1,16 @@
 import SwiftUI
 
-// MARK: - Streak-Recovery-Buddy (Editorial — eingebettet, weicher)
+// MARK: - Streak-Recovery-Buddy (v7 — pink Glass-Card)
 //
 // Wenn die User-Streak gebrochen wurde UND die alte Best-Streak jemals
-// >= 7 Tage war, zeigen wir einen sanften Hinweis-Block im Heute-Tab.
-// Jetzt im Editorial-Stil: weniger Pink-Aggression, weicherer
-// Tertiary-Background, kleinere Headline. Wirkt eingebettet statt
-// „neues Element".
+// >= 7 Tage war, zeigen wir einen motivierenden Hinweis-Block im
+// Heute-Tab. Pink Glass-Card mit Icon, Header, einem motivierenden
+// Spruch und einem großen Button „Heute Kreatin nehmen".
 //
-//  1. Header (klein) + motivational Quote
-//  2. Kurze Info zur Best-Streak
-//  3. „Heute Kreatin nehmen" Button
-//  4. X-Button zum Wegblenden
+//  1. Header (pink Heart-Icon) + „Streak-Neustart willkommen"
+//  2. Best-Streak-Anzeige
+//  3. Motivierender Spruch (rotiert täglich)
+//  4. „Heute Kreatin nehmen" Button
 
 struct RecoveryBuddyCard: View {
     @Environment(CreatineStore.self) private var store
@@ -47,49 +46,50 @@ struct RecoveryBuddyCard: View {
 
     var body: some View {
         if shouldShow {
-            HStack(alignment: .top, spacing: 12) {
-                Image(systemName: "heart.text.square.fill")
-                    .font(.title3)
-                    .foregroundStyle(.pink.opacity(0.85))
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(spacing: 12) {
+                    Image(systemName: "heart.text.square.fill")
+                        .font(.title2)
+                        .foregroundStyle(.pink)
 
-                VStack(alignment: .leading, spacing: 6) {
-                    HStack {
-                        Text("Neustart willkommen")
-                            .font(.subheadline.bold())
-                        Spacer()
-                        Button {
-                            Haptics.tap()
-                            dismissedForDay = todayKey
-                        } label: {
-                            Image(systemName: "xmark.circle.fill")
-                                .font(.caption)
-                                .foregroundStyle(.tertiary)
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel("Karte für heute weglassen")
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Streak-Neustart willkommen")
+                            .font(.headline)
+                        Text("Beste Streak: \(store.bestStreak) Tage")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(.pink.opacity(0.85))
                     }
-
-                    Text(quote)
-                        .font(.caption.weight(.medium))
-                        .foregroundStyle(.primary)
-                        .fixedSize(horizontal: false, vertical: true)
-
+                    Spacer(minLength: 0)
                     Button {
-                        Haptics.tapMedium()
-                        action()
+                        Haptics.tap()
+                        dismissedForDay = todayKey
                     } label: {
-                        Label("Heute Kreatin nehmen", systemImage: "checkmark.circle")
-                            .font(.footnote.weight(.semibold))
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 8)
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.title3)
+                            .foregroundStyle(.tertiary)
                     }
-                    .buttonStyle(.borderedProminent)
-                    .tint(.pink.opacity(0.85))
-                    .padding(.top, 4)
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Karte für heute weglassen")
                 }
+
+                Text(quote)
+                    .font(.subheadline)
+                    .foregroundStyle(.primary.opacity(0.85))
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Button {
+                    Haptics.tapMedium()
+                    action()
+                } label: {
+                    Label("Heute Kreatin nehmen", systemImage: "checkmark.circle")
+                        .font(.body.weight(.semibold))
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 48)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(.pink)
             }
-            .padding(14)
-            .background(Color(.tertiarySystemFill), in: RoundedRectangle(cornerRadius: 14))
+            .padding(16)
             .transition(.move(edge: .top).combined(with: .opacity))
         }
     }

@@ -1,23 +1,23 @@
 import SwiftUI
 import Charts
 
-// MARK: - Mood-History-Chart
+// MARK: - Mood-History-Chart (v7 — bleibt unverändert)
 //
 // Mini-7-Bar-Chart der letzten 7 Tage Stimmung. Eingebettet in
 // HistoryView zwischen StatsGrid und Streak-Share-Banner. Nutzt ein
 // eigenes BarMark-Chart weil wir diskrete Stimmungs-Werte als
-// numerische Scores abbilden (😐=0, 😊=+1, 🤩=+2, 🥵=-1, 😴=-2).
+// numerische Scores abbilden.
 
 struct MoodHistoryChart: View {
     @Environment(CreatineStore.self) private var store
 
     /// Mapping emoji -> numerischer Score für die Y-Achse.
     static let moodScores: [String: Double] = [
-        "neutral":  0,    // 😐
-        "good":     1,    // 😊
-        "great":    2,    // 🤩
-        "stressed": -1,   // 🥵
-        "tired":    -2,   // 😴
+        "neutral":  0,
+        "good":     1,
+        "great":    2,
+        "stressed": -1,
+        "tired":    -2,
     ]
 
     private static let moodLabels: [String: String] = [
@@ -79,15 +79,12 @@ struct MoodHistoryChart: View {
             .frame(height: 110)
         }
         .padding()
-        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16))
     }
 
-    /// Y-Achse-🔢 → emoji-shortcut für kompakte Achsenbeschriftung.
     private func emojiFor(score: Int) -> String {
         Self.emoji(for: score)
     }
 
-    /// Y-Achse-🔢 → emoji-shortcut (PUBLIC für HistoryView-Reuse).
     static func emoji(for score: Int) -> String {
         switch score {
         case -2: return "😴"
@@ -99,12 +96,10 @@ struct MoodHistoryChart: View {
         }
     }
 
-    /// Look-up Score per Mood-Key (PUBLIC für HistoryView-Reuse).
     static func moodScore(for moodKey: String) -> Double? {
         moodScores[moodKey]
     }
 
-    /// Positiv = blau-grün, negativ = orange, neutral (😐 oder leer) = grau.
     private func barColor(score: Double, hasEntry: Bool) -> Color {
         if !hasEntry { return .gray.opacity(0.15) }
         if score >  0 { return .mint }
@@ -117,9 +112,6 @@ struct MoodHistoryChart: View {
         let score: Double
         let hasEntry: Bool
 
-        /// `date` ist innerhalb der 7-Tage-Range unique, also als ID
-        /// ausreichend (genauer: der Tag-Schlüssel, nicht der exakte
-        /// Timestamp).
         var id: Date { date }
     }
 }
