@@ -5,7 +5,44 @@ Datums-Format: `YYYY-MM-DD`.
 
 ---
 
-## [v8] — 2026-07-13 · Editorial Hero Redesign
+## [v9] — 2026-07-13 · v7 Glass-Card Rollback
+
+Komplette Rücknahme des v8-Editorial-Hero-Redesigns.
+
+**Anlass:** User-Feedback: die neue UI „ist zu viel glatt, sieht nicht wunderschön aus". v8 wirkte zu flach/zu clean ohne Charakter. Resultat: vollständige Wiederherstellung des ursprünglichen v7-Glass-Card-Looks.
+
+### Geänderte Dateien
+- `Creatime/TodayView.swift` — komplett neu geschrieben, Glass-Card-Layout 22pt spacing, 7 Cards (Streak, Mood, Week, Recovery, Hauptaufgabe, Wasser, Tipp)
+- `Creatime/HistoryView.swift` — komplett neu geschrieben, 6-Tile-StatGrid 2×3 + InsightsSection + 2 Weekly-Charts + BuddyView + MonthCalendar mit reaktiviertem `DayCell` + PhotoStreakSection. `perfectDays` dead code entfernt (war in v8)
+- `Creatime/AchievementsView.swift` — komplett neu geschrieben, 140pt Hero-Ring (visuell) + Next-Achievement-Card + `AchievementSection` 3-Spalten-Grid (Glass)
+- `Creatime/MoodEmojiPicker.swift` — reaktiviert: Glass-Card, 5 Emojis + Labels, `.padding(.horizontal, -8)` Edge-Bleed-Hack
+- `Creatime/WaterTrackerCard.swift` — reaktiviert: volle Glass-Card (Header + Goal-Row + dicke ProgressBar + 42pt Hero + Action-Row mit Long-Press-Boost + NavigationLink Ziel-Sheet)
+- `Creatime/RecoveryBuddyCard.swift` — reaktiviert: pink Glass-Card mit Quote + „Heute Kreatin nehmen"-Button
+- `Creatime/MoodHistoryChart.swift` — unverändert, public Helpers bleiben
+
+### Neue Datei
+- `Creatime/VacationBanner.swift` — Glass-Card mit Palm-Icon + Datum + Chevron, full-width tap. War v8 inline in TodayView/HistoryView und ist jetzt eigenständig.
+
+### Re-Intro `dead code` aus v8-Cleanup
+- `InsightsSection` + private `InsightRow` (in HistoryView)
+- `AchievementSection` (in AchievementsView)
+- `DayCell` simple Stub (in HistoryView) — ActivityRingDayCell existiert weiter, wird aber aktuell nicht im MonthCalendar v7 verwendet
+
+### Funktional unverändert
+- Haptics.Enum (`success`/`error`/`tap`/`tapMedium`/`select`/`boost`/`successHeavy`)
+- ConfettiView via `lastCelebratedMilestone` + `acknowledgeLatestMilestone()`
+- markAsTaken / freezeToday / skipToday-Pfad in TodayView
+- LiveActivityManager.pushLiveActivityUpdate
+- AchievementDetailSheet + CelebrationToast (in AchievementsView bleibt inline)
+- WaterStore.GoalMode (ml / glasses / bottles), quickAmounts, didSet-Rounding
+
+### Git
+- **Commit-SHA**: `02ba3df` auf `main`
+- **Auto-Push-Workflow** aktiv: nach jeder Code-Task wird `git add` + Commit + `git push origin main` ausgeführt
+
+---
+
+## [v8] — 2026-07-13 · Editorial Hero Redesign *(zurückgenommen in v9)*
 
 ### Heute-Tab
 - **96pt Streak-Hero** als freistehender Eye-Catcher (vorher 64pt + separate „Tage in Folge"-Subtitel)
@@ -38,7 +75,7 @@ Datums-Format: `YYYY-MM-DD`.
 
 ---
 
-## [v7] — 2026-07-06 · Feature Batch
+## [v7] — 2026-07-06 · Feature Batch *(wieder aktuell seit v9)*
 
 ### Features
 - **MoodEmojiPicker** im Heute-Tab (5 Emoji-Achsen: 😐😊🤩🥵😴)

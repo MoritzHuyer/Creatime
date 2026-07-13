@@ -1,6 +1,6 @@
 # Creatime — Session Summary
 
-> Stand: 2026-07-13 (v8 — Editorial Hero Redesign)
+> Stand: 2026-07-13 (v9 — v7 Glass-Card Rollback)
 
 Native iOS-SwiftUI-Habit-Tracker für tägliche Kreatin-Einnahme + Wasser-Tracking.
 Build clean, 0 Warnings, läuft im iOS 17+ Simulator.
@@ -13,19 +13,25 @@ Build clean, 0 Warnings, läuft im iOS 17+ Simulator.
 zwischen App + Widget + LiveActivity, `Shared/StreakCalculator` als DRY-Quelle
 der Streak-Logik für App+Widget.
 
-**UI-System (Stand v8):**
-- `Color(.systemGroupedBackground)` als Default-BG auf allen 3 Tabs
-- 96pt Streak-Hero auf Today, 72pt auf History, 120pt-Ring auf Achievements
-- CAPS-Tracking-Sektionlabels als typografisches Pattern
-- Keine `.regularMaterial`-Cards für Hero-Bereiche
-- Inline-Komponenten (Mood/Week) ohne Card-Rahmen
-- `AboutSheet` aus SettingsView für App-Info
+**UI-System (Stand v9 = v7-Wiederherstellung):**
+- Glass-Cards (`.liquidGlassCard()`) als Default-Chrom auf allen 3 Tabs
+- 64pt Streak-🔥-Zahl als Glass-Karten-Hero auf TodayView
+- 6er-StatGrid (2×3 Glass-Cards) auf HistoryView
+- 140pt (visuell = 110pt Ring + 16pt Padding) Achievements-Ring + Next-Achievement-Card
+- 22pt Spacing zwischen Cards, `Liquid-Gradient` als BG (Indigo→Teal)
+- Padding-Hack `.padding(.horizontal, -8)` für MoodEdge-Bleed im MoodEmojiPicker
+- `InsightsSection` (`4 Sub-Rows`), `AchievementSection`, `DayCell` wieder vorhanden
+- Neue Datei: `Creatime/VacationBanner.swift` (war v8-Inline, jetzt eigenständig)
 
 ---
 
 ## Timeline (gekürzt)
 
-### v8 (heute, 2026-07-13) — Editorial Hero Redesign
+### v9 (heute, 2026-07-13) — v7 Glass-Card Rollback
+**Anlass:** User-Feedback „die UI ist zu glatt, sieht nicht wunderschön aus". v8-Editoral-Hero wurde zugunsten der ursprünglichen Glass-Card-Ästhetik komplett rückgängig gemacht. 7 View-Files neu geschrieben + `VacationBanner.swift` neu erstellt.
+- **Commit:** `02ba3df` auf `main`, gepusht via Auto-Push.
+
+### v8 (2026-07-13, zurückgenommen) — Editorial Hero Redesign
 - TodayView: 96pt-Hero, Mood/Week inline, Wasser als Compact-Strip, Recovery als Streifen, `TipCard` raus
 - HistoryView: 72pt-Hero + 4-col KeyStats + CAPS-Labels + InsightsStrip
 - AchievementsView: 120pt-Ring (vorher 140pt) + Soft-Badges + Tipp-Footer
@@ -123,8 +129,11 @@ open Creatime.xcodeproj        # ⌘R zum Starten
 
 ## Git / GitHub (Stand 2026-07-13)
 
-- Repo: `Creatime` (Public) — wird beim nächsten Push via `gh repo create` angelegt
+- Repo: `Creatime` (Public) auf GitHub — `https://github.com/MoritzHuyer/Creatime`
+- HTTP-Status des Repos bestätigt: `200 OK`
 - Branch: `main`
-- **Auto-Push** nach jedem Build via `PBXShellScriptBuildPhase` (Phase ID `AA41`)
+- Letzte Commit-SHA: `02ba3df` (v7-Rollback)
+- **Auto-Push** aktiv: nach jeder Code-Task führe ich `git add` + Commit + `git push origin main` aus (User-Wunsch: „jedes Mal direkt automatisch pusht")
+- **Build-Trigger-Auto-Push** zusätzlich via `PBXShellScriptBuildPhase` (Phase ID `AA41`, noop wenn kein Remote)
 - `.gitignore` deckt `DerivedData/`, `.swiftpm/`, `build/`, `*.xcuserdata/`, `.obsidian/`, `*.pbxproj.bak.*` ab
-- Doku: `CLAUDE.md` (Claude Code Memory), `README.md` (GitHub), `CHANGELOG.md` (Versionshistorie)
+- Doku: `CLAUDE.md` (Claude Code Memory), `README.md` (GitHub-Landingpage), `CHANGELOG.md` (Versionshistorie)

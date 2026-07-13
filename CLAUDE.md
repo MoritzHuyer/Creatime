@@ -1,6 +1,6 @@
 # Creatime — Claude Code Project Memory
 
-> Stand: 2026-07-13 (v8 — Editorial Hero Redesign)
+> Stand: 2026-07-13 (v9 — v7 Glass-Card Rollback)
 
 iOS-SwiftUI-Habit-Tracker für tägliche Kreatin-Einnahme + Wasser-Tracking.
 
@@ -44,28 +44,44 @@ iOS-SwiftUI-Habit-Tracker für tägliche Kreatin-Einnahme + Wasser-Tracking.
 
 ---
 
-## v8 — Editorial Hero UI (heute ausgerollt)
+## v9 — v7 Glass-Card-Layout (heute ausgerollt, **Rollback von v8**)
+
+User-Feedback „zu glatt, nicht wunderschön" → Editorial-Hero vollständig rückgängig. Glass-Card-Optik ist jetzt wieder überall.
 
 ### Heute-Tab
-- **96pt Streak-🔥** als freistehender Hero (kein Card-Rahmen, kein Gradient-BG)
-- `systemGroupedBackground` statt Glass-Gradient
-- MoodEmojiPicker inline (5 Emoji, kein `.regularMaterial`)
-- WeekOverview inline (7 Kreise, 30pt heute-Ring)
-- WaterTrackerCard als **eine Zeile** (Label · Hero-Number · Progress · Quick-Buttons)
-- RecoveryBuddyCard als eingebetteter `tertiarySystemFill`-Streifen (selten)
-- TipCard **entfernt** (Content wandert nach Achievements)
+- **64pt Streak-🔥** freistehend in Glass-Card (Label "Tage in Folge" drunter)
+- MoodEmojiPicker in eigener Glass-Card (5 Emojis + Labels, `.padding(.horizontal, -8)` Edge-Bleed-Hack wieder aktiv)
+- WeekOverview in Glass-Card (7 Kreise, 30pt)
+- RecoveryBuddyCard als pink Glass-Card mit "Heute Kreatin nehmen"-Button
+- Big "Kreatin genommen"-Button (60pt, volle Breite)
+- Pause/Freeze als `Menu` (typografisch klein, unter dem Big-Button)
+- WaterTrackerCard in voller Glass-Card (Header + Goal-Row + dicke Progress-Bar + 42pt Hero + Action-Row mit Long-Press-Boost)
+- TipCard als Glass-Card (Tipp-rotiert täglich)
+- Reminder-Chip als Capsule am Foot
+- BG: `LinearGradient(systemIndigo.0.10 → systemTeal.0.06 → .clear)`
 
 ### Fortschritt-Tab
-- 72pt Streak-Hero
-- **4-Spalten KeyStats** mit `Divider().opacity(0.4)` (Ø Wasser / Perfekte Tage / Score / Mood-Ø)
-- **InsightsStrip** statt InsightsCard (Score-Ring 54pt + Heatmap + Wochenvergleich in EINEM)
-- **CAPS-Sektionlabels** mit Tracking 1.4
-- MonthCalendar mit `ActivityRingDayCell` (3 Ringe)
+- **6er-Stat-Grid 2×3** mit Glass-Cards: Aktuelle Streak / Creatine-Quote / Wasser-Ø / Buddy / Mood-Ø / Konsistenz-Score
+- MoodHistoryChart (7-Bar-Chart) in Glass-Card
+- StreakShareBanner in Glass-Card (ActivityShareSheet-Share-Button)
+- **InsightsSection** in Glass-Card (4 Sub-Rows: Wasser-Ø-Woche / Wochenvergleich / Vergesslichster-Wochentag / Konsistenz-Score)
+- 2 Weekly-Charts (Wasser + Creatin) in Glass-Cards
+- BuddyView in Glass-Card
+- MonthCalendar (Glass-Card) mit wieder-eingeführtem `DayCell`-Stub
+- PhotoStreakSection (Glass-Card) am Ende
 
 ### Erfolge-Tab
-- **120pt Hero-Ring** (vorher 140pt — visuelle Konsistenz mit TodayView)
-- **Soft-Badges** mit dünner `separator` Border + `secondarySystemGroupedBackground`
-- **Tipp-Footer** migriert (war auf TodayView)
+- **140pt visuell (= 110pt Ring + 16pt Padding)** Hero-Ring + unlocked-counter
+- Next-Achievement-Card in Glass (wieder-eingeführt ≠ v8 soft border)
+- AchievementSection 3-Spalten-Grid (wieder-eingeführt) mit `AchievementBadge` (Glass)
+
+### Neu hinzugefügte Datei
+- `Creatime/VacationBanner.swift` — Glass-Card mit Palm-Icon + Datum + Chevron, full-width tap-area (`onTap: () -> Void`)
+
+### Hinzugefügte Structs (Re-Intro aus v8-Cleanup)
+- `InsightsSection` + `InsightRow` (in HistoryView)
+- `AchievementSection` (in AchievementsView)
+- `DayCell` Simple-Stub (in HistoryView)
 
 ---
 
@@ -114,9 +130,12 @@ Timestamp + `git push origin main`. Noop wenn kein Remote konfiguriert.
 
 ## Git / GitHub
 
-- Repo Name: `Creatime` (Public)
-- Remote: nach `gh auth login` einmalig `gh repo create Creatime --public --source=. --remote=origin --push`
+- Repo Name: `Creatime` auf `https://github.com/MoritzHuyer/Creatime` (Public)
+- Remote: bereits angelegt mit `gh repo create Creatime --public --source=. --remote=origin`
 - Branch: `main`
+- Letzte Commit-SHA: `02ba3df` (v9 = v7-Rollback)
+- **Auto-Push-Workflow**: Ich pushe nach jeder fertigen Code-Task automatisch via `git add` + Commit + `git push origin main` (User-Wunsch)
+- **Build-Trigger-Auto-Push** zusätzlich via `PBXShellScriptBuildPhase` (Phase ID `AA41`)
 - Workflows: noch keine — optional später `ios-testflight-deploy.yml`
 
 ---
