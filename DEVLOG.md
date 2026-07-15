@@ -15,6 +15,26 @@ Mehr zur Strategie in [`./BUILDING_IN_PUBLIC.md`](./BUILDING_IN_PUBLIC.md).
 
 ## Letzte Einträge
 
+### 2026-07-15 · v12 UI-Revert auf v7 + Beta-Label + V1-Checklist
+
+**Was diese Woche passiert ist:**
+
+- **v11 Bold Sports-App hat sich als „zu cluttered" herausgestellt** — 88pt Hero-Streak, Glow-Progress, Mesh-Background. Komplett-Revert auf v7 Glass-Card-Layout (das ist die Variante die auf dem iPhone schon gefallen hat, vor Build 34aaa2a).
+- 4 Files via `git checkout 02ba3df --` restored: `TodayView` / `HistoryView` / `AchievementsView` / `WaterTrackerCard`.
+- **Darkmode-Schutz erhalten**: LinearGradient-Background in den 3 Views durch `DynamicBackground()` ersetzt, mode-aware `LiquidGlass` beibehalten — sonst wäre der matschige Indigo-Gradient zurück.
+- **Versionierung:** `MARKETING_VERSION` 1.0 → **0.9.0** (1.0 für V1-Submit reserviert), `CURRENT_PROJECT_VERSION` 1 → 2. Settings-Footer zeigt jetzt „Creatime v0.9.0 (Beta)".
+- **Beta-Label bewusst minimal**: nur im Settings-Footer, sonst nirgends. Wer Beta testet, schaut eh in die Settings.
+- **V1 Launch Checklist** in CHANGELOG mit 9 essentiellen Blockern + 3 Post-Launch-Polish-Items.
+
+**Was ich gelernt habe:**
+
+- **„Bold und pumped" ≠ „schön"** für eine persönliche Habit-Tracker-App. Mein Publikum will Konsistenz, keinen Fitness-Coach-Look. v11 wirkte wie ein Dashboard für ein Supplement-Branding, nicht wie mein eigener Tracker.
+- **Layout-Density wichtiger als Style-Pushes.** v11 hatte zu viele Cards + zu große Hero-Zahlen + doppelte Inhalte zwischen TodayView und HistoryView = cluttered. v7's 22pt-Spacing mit kompakteren Hero-Werten hat mehr Atmung.
+- **Subtile Beta-Kennzeichnung > aufdringliche Watermarks.** Watermarks im Hero-Bereich wären für eigene Tests störend. Footer-only ist die richtige Position.
+- **DRY-Discipline zahlt sich bei Bugfixes aus** — derselbe `LinearGradient`-Stub in 4 Files, ein Helper, ein Commit, alle dunkel-mode-safe.
+
+---
+
 ### 2026-07-13 · v9 Rollback + v10 Sponsoring-Infrastruktur
 
 **Was diese Woche passiert ist:**
@@ -61,7 +81,7 @@ _(Wird laufend ergänzt — pro Woche ca. 1-2 Einträge.)_
 
 | Metrik                          | Wert                                                  |
 | ------------------------------- | ----------------------------------------------------- |
-| **App-Version**                 | v10                                                   |
+| **App-Version**                 | v0.9.0 (Beta-pre-V1, intern v12)                      |
 | **Lines of Swift**              | ~4.500 (14+ Dateien in `Creatime/`)                   |
 | **Features (implementiert)**    | Streak, Wasser, Mood, Photo-Streak, Buddy, Live-Activity, Widgets, AppIntents, Liquid Glass Design |
 | **Storage**                     | App Group (`UserDefaults`), kein Backend               |

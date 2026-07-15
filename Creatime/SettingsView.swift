@@ -270,7 +270,7 @@ struct SettingsView: View {
 
                     // MARK: Footer
                     VStack(spacing: 4) {
-                        Text("Creatime v\(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0")")
+                        Text("Creatime v\(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0") (Beta)")
                             .font(.caption)
                             .foregroundStyle(.tertiary)
                         Text("Made with ❤️ by Moritz")

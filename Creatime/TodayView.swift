@@ -23,7 +23,6 @@ struct TodayView: View {
     @Environment(CreatineStore.self) private var store
     @Environment(WaterStore.self) private var water
     @Environment(SoundsManager.self) private var sounds
-    @Environment(ThemeManager.self) private var themeManager
 
     @AppStorage("reminderHour") private var reminderHour = 20
     @AppStorage("reminderMinute") private var reminderMinute = 0
@@ -146,33 +145,22 @@ struct TodayView: View {
         }
     }
 
-    // MARK: - Streak-Karte (Bold Sports-App Hero, v11)
+    // MARK: - Streak-Karte (Glass-Card)
 
     private var streakCard: some View {
-        HStack(alignment: .center, spacing: 16) {
+        VStack(spacing: 6) {
             Text("🔥")
-                .font(.system(size: 64))
-                .accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: 4) {
-                Text("\(store.currentStreak)")
-                    .font(.system(size: 88, weight: .heavy, design: .rounded))
-                    .contentTransition(.numericText())
-                    .monospacedDigit()
-                    .foregroundStyle(themeManager.theme.primary)
-                    .minimumScaleFactor(0.6)
-                    .lineLimit(1)
-                    .accessibilityHidden(true)
-                Text("Tage in Folge")
-                    .font(.caption.weight(.heavy))
-                    .tracking(1.4)
-                    .foregroundStyle(.primary.opacity(0.65))
-                    .accessibilityHidden(true)
-            }
-            Spacer(minLength: 0)
+                .font(.system(size: 48))
+            Text("\(store.currentStreak)")
+                .font(.system(size: 64, weight: .bold, design: .rounded))
+                .contentTransition(.numericText())
+                .monospacedDigit()
+            Text("Tage in Folge")
+                .font(.subheadline.weight(.medium))
+                .foregroundStyle(.secondary)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 22)
-        .padding(.vertical, 22)
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 18)
         .liquidGlassCard()
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(store.currentStreak) Tage Streak in Folge")

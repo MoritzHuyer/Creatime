@@ -21,7 +21,6 @@ struct HistoryView: View {
     @Environment(CreatineStore.self) private var store
     @Environment(WaterStore.self) private var water
     @Environment(PhotoStreakStore.self) private var photoStore
-    @Environment(ThemeManager.self) private var themeManager
 
     @State private var showSettings = false
 

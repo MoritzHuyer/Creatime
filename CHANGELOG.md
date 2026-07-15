@@ -5,6 +5,78 @@ Datums-Format: `YYYY-MM-DD`.
 
 ---
 
+## [v12] — 2026-07-15 · v7 Glass-Card UI-Revert + Beta-Label + V1-Launch-Checklist
+
+v11 Bold Sports-App UI war zu cluttered (88pt Hero-Streak, Glow-Progress, Mesh-Background). Komplett-Revert auf v7 Glass-Card-Layout — das ist die Variante, die auf dem iPhone schon gefallen hat. Darkmode-Schutz (DynamicBackground + mode-aware LiquidGlass) bleibt erhalten, sonst kommt der matschige Indigo-Gradient zurück.
+
+### Geänderte Dateien
+
+- `Creatime/TodayView.swift` — v7 Layout (64pt Streak-Zahl, 48pt Emoji, 22pt Card-Spacing, 10 Sections)
+- `Creatime/HistoryView.swift` — v7 Layout (9 Sections: Stat-Grid → Mood-Chart → Share-Banner → Insights → 2 Wochen-Charts → Buddy → Month-Calendar → Photo-Streak)
+- `Creatime/AchievementsView.swift` — v7 Layout (110pt Hero-Ring + Next-Achievement-Card + 3-Spalten-Badge-Grid)
+- `Creatime/WaterTrackerCard.swift` — v7 (42pt Hero-Number in Blue, ProgressBar mit scaleEffect y:1.6, Minus + Quick-Add + +1L Buttons)
+- `Creatime/SettingsView.swift` — Footer-Text um „ (Beta)” ergänzt
+- `Creatime.xcodeproj/project.pbxproj` — MARKETING_VERSION 1.0 → 0.9.0 (V1-Lock), CURRENT_PROJECT_VERSION 1 → 2
+
+### Versionierung
+
+- **MARKETING_VERSION** = `0.9.0` (1.0 für V1 App-Store-Submit reserviert)
+- **CURRENT_PROJECT_VERSION** = `2` (Build-Counter incremented)
+- **SettingsView-Footer** zeigt jetzt: „Creatime v0.9.0 (Beta)” + „Made with ❤️ by Moritz”
+
+### V1 Launch Checklist (zu erledigen bis App-Store-Submit)
+
+⭐ **V1-Blocker (was ich bis zum Launch tun muss):**
+
+1. ⭐ **Apple Developer Program** — €99/Jahr (blockiert bis 18)
+2. ⭐ **Englisch-Lokalisierung** — Settings-Texte aktuell DE-only
+3. ⭐ **App Store Screenshots** — 6.7", 6.1", 5.5" (DE + EN)
+4. ⭐ **App Store Description** — DE + EN, je ~4000 Zeichen
+5. ⭐ **Privacy Policy URL** — im Web gehostet (Apple-Pflicht seit Mai 2024)
+6. ⭐ **Support-URL** — im App Store Connect hinterlegt
+7. ⭐ **Accessibility-Audit** — VoiceOver durch alle 3 Tabs (Heute / Fortschritt / Erfolge)
+8. ⭐ **TestFlight** — mit 10–20 Beta-Usern vor V1-Submit
+9. ⭐ **App Store Connect Final-Submit** — alle Felder gefüllt, Release-Notes
+
+🛠️ **Post-Launch-Polish (nicht-blockierend):** App-Preview-Video, Onboarding-Feinschliff, Code-Sign/APNs-Key (nur falls LiveActivity-Push). Diese können auch nach V1-Launch passieren.
+
+### Nicht verändert
+
+- `Creatime/DynamicBackground.swift` — bleibt v11 (sonst LinearGradient = Darkmode-Bug zurück)
+- `Creatime/LiquidGlass.swift` — bleibt v11 mode-aware (Darkmode-Schutz)
+- `Creatime/ThemeManager.*`, `OnboardingView`, `NotificationManager`, `HealthKitManager`, Stores, LiveActivity
+
+### Git
+
+- (Auto-Push folgt nach Build-Verifikation)
+
+---
+
+## [v11] — 2026-07-14 · Bold Sports-App UI Redesign *(zurückgenommen in v12)*
+
+Frischer Anlauf nach v9/v10: Bold-Sports-App-Look mit dynamischem Mesh-Background (`DynamicBackground.swift`) + 88pt Heavy Hero-Streak + Glow-Progress. Visuell auffällig, aber User-Feedback „zu cluttered, viel zu viel, vieles wiederholt sich" → Komplett-Revert in v12.
+
+### Geänderte Dateien
+
+- `Creatime/DynamicBackground.swift` **NEU** — mode-aware Orb-Background (ersetzt LinearGradient in 5 Files)
+- `Creatime/LiquidGlass.swift` — mode-aware Highlights & Strokes für Darkmode-Schutz
+- `Creatime/TodayView.swift` — Hero-Streak: 64pt → **88pt heavy** (theme-tinted) + UPPERCASE Tracking 1.4 Caption „TAGE IN FOLGE"
+- `Creatime/HistoryView.swift` + `Creatime/AchievementsView.swift` — Bold Sports-App-Styling
+- `Creatime/WaterTrackerCard.swift` — **56pt Heavy Hero-Number** + Glow-Shadow Progress-Bar (theme-tinted)
+
+### Was bleibt (in v12 weiterverwendet)
+
+- `Creatime/DynamicBackground.swift` — behalten als Darkmode-Schutz
+- mode-aware `LiquidGlass.swift` — behalten für Darkmode-Reduktion der weißen Highlights
+
+### Lehre
+
+- „Bold und pumped" ≠ „schön" für eine persönliche Habit-Tracker-App. Mein Publikum will Konsistenz, keinen Fitness-Coach-Look.
+- Layout-Density wichtiger als Style-Pushes. v11 hatte zu viele Cards + zu große Hero-Zahlen + visuelle Doppelung zwischen `TodayView` und `HistoryView`.
+- Was ich behalten habe (DynamicBackground + mode-aware Glass) ist der technische Wert, nicht der visuelle. Pure UI-Reset, Infrastruktur-Update.
+
+---
+
 ## [v10] — 2026-07-13 · Sponsoring & Audience-Infrastruktur
 
 Da der App-Store-Launch noch warten muss (Apple Developer Program verlangt

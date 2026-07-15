@@ -2,6 +2,8 @@
 
 > Sub-File zu [`./DEVLOG.md`](./DEVLOG.md) — dort das Journal, hier die Strategie.
 > Wie ich Creatime von „Solo-Side-Project" zu „etwas mit echter Audience" bringe.
+>
+> **Letzter Stand:** 2026-07-15 (v12 — UI-Revert auf v7 + Beta-Label + V1-Checklist veröffentlicht)
 
 ---
 

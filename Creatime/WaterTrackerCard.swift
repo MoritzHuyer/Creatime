@@ -12,7 +12,6 @@ import SwiftUI
 struct WaterTrackerCard: View {
     @Environment(WaterStore.self) private var water
     @Environment(SoundsManager.self) private var sounds
-    @Environment(ThemeManager.self) private var themeManager
 
     /// Long-Press-Boost-Task: hält den Repeater am Leben, bis der Finger
     /// vom Button geht.
@@ -98,24 +97,16 @@ struct WaterTrackerCard: View {
                 }
             }
 
-            // 3) Progress-Bar (dick + Glow, v11)
+            // 3) Progress-Bar (dicker)
             ProgressView(value: min(1.0, water.todayProgress))
                 .progressViewStyle(.linear)
-                .tint(water.goalReachedToday ? .green : themeManager.theme.primary)
-                .scaleEffect(x: 1, y: 2.0, anchor: .center)
-                .shadow(
-                    color: (water.goalReachedToday ? Color.green : themeManager.theme.primary).opacity(0.45),
-                    radius: 6, y: 0
-                )
+                .tint(water.goalReachedToday ? .green : .blue)
+                .scaleEffect(x: 1, y: 1.6, anchor: .center)
 
-            // 4) HeroNumber (Bold Sports, v11) — minimumScaleFactor schützt
-            //    vor visuellem Break bei sehr großen Liter-Werten (z. B.
-            //    Long-Press-Spam oder Edge-Cases >9,9 L).
+            // 4) HeroNumber
             Text("\(localizedNumber(Double(water.todayAmount) / 1000)) L")
-                .font(.system(size: 56, weight: .heavy, design: .rounded))
-                .foregroundStyle(themeManager.theme.primary)
-                .minimumScaleFactor(0.6)
-                .lineLimit(1)
+                .font(.system(size: 42, weight: .bold, design: .rounded))
+                .foregroundStyle(.blue)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .contentTransition(.numericText())
 

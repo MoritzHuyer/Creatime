@@ -1,6 +1,6 @@
 # Creatime — Claude Code Project Memory
 
-> Stand: 2026-07-13 (v10 — Sponsoring & Audience-Infrastruktur aufgesetzt)
+> Stand: 2026-07-15 (v12 — UI-Revert auf v7 Glass-Card-Layout + Beta-Label)
 
 iOS-SwiftUI-Habit-Tracker für tägliche Kreatin-Einnahme + Wasser-Tracking.
 
@@ -14,7 +14,7 @@ iOS-SwiftUI-Habit-Tracker für tägliche Kreatin-Einnahme + Wasser-Tracking.
 | Persistierung | App Group `group.com.moritz.Creatime` (`SharedDefaults.store`) |
 | Build | Xcode 16, `Creatime` App + `CreatimeWidget` Extension + `CreatimeTests` |
 | Bundle-ID | `com.moritz.Creatime` (App), `com.moritz.Creatime.CreatimeWidget` (Extension) |
-| Min-iOS | 17.0 · Marketing `1.0` · Build `1` |
+| Min-iOS | 17.0 · Marketing `0.9.0` · Build `2` |
 
 ---
 
@@ -41,6 +41,18 @@ iOS-SwiftUI-Habit-Tracker für tägliche Kreatin-Einnahme + Wasser-Tracking.
   Widget nutzen identische Funktion (DRY-Strategie).
 - **`SharedDefaults.store`** — `UserDefaults(suiteName: "group.com.moritz.Creatime")`.
 - **`DayKey`** — `yyyy-MM-dd` String-Format (POSIX-Locale, Format/Sortierung-stabil).
+
+---
+
+## v12 — v7 Glass-Card-Revert (2026-07-15) + Beta-Label
+
+User-Feedback: v11 Bold Sports-App (siehe CHANGELOG.md [v11]) war zu cluttered + Doppel-Inhalte. Komplett-Revert auf v7 Glass-Card-Layout (vorher auf iPhone gefallen). Darkmode-Schutz (DynamicBackground + mode-aware LiquidGlass) bleibt erhalten.
+
+**MARKETING_VERSION** ist jetzt `0.9.0` (1.0 für echten V1 App-Store-Submit reserviert). `CURRENT_PROJECT_VERSION` = `2`. Settings-Footer zeigt: „Creatime v0.9.0 (Beta)".
+
+Geänderte Files: `TodayView.swift`, `HistoryView.swift`, `AchievementsView.swift`, `WaterTrackerCard.swift` (alle auf v7 restored via `git checkout 02ba3df`), `SettingsView.swift` (Footer-Erweiterung), `project.pbxproj` (Versioning), `CHANGELOG.md`/`DEVLOG.md` (Status).
+
+V1 Launch Checklist mit 9 Blockern + 3 Post-Launch-Polish-Items in `CHANGELOG.md`. ⭐ = V1-blocker.
 
 ---
 
