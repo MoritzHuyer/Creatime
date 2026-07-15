@@ -25,7 +25,7 @@ struct SettingsView: View {
 
     @Environment(\.dismiss) private var dismiss
 
-    @AppStorage("soundTheme") private var soundThemeRaw: String = SoundTheme.wellness.rawValue
+    @AppStorage("soundTheme") private var soundThemeRaw: String = SoundTheme.gym.rawValue
 
     // Erinnerungs-Toggle (NEU v14). Default true. Wird an
     // NotificationManager.rescheduleSmartReminders(... remindersEnabled)
@@ -205,38 +205,11 @@ struct SettingsView: View {
                         }
                     }
 
-                    // MARK: Sound-Theme
-                    SettingsCard(title: "Sound-Thema", systemImage: "speaker.wave.2.fill") {
-                        VStack(spacing: 8) {
-                            ForEach(SoundTheme.allCases) { theme in
-                                Button {
-                                    sounds.theme = theme
-                                    soundThemeRaw = theme.rawValue
-                                    sounds.previewTheme(theme)
-                                } label: {
-                                    HStack {
-                                        Image(systemName: theme.iconName)
-                                            .frame(width: 26)
-                                            .foregroundStyle(Color.accentColor)
-                                        Text(theme.displayName)
-                                            .foregroundStyle(.primary)
-                                        Spacer()
-                                        if soundThemeRaw == theme.rawValue {
-                                            Image(systemName: "checkmark")
-                                                .foregroundStyle(.green)
-                                        }
-                                    }
-                                    .padding(.vertical, 8)
-                                    .padding(.horizontal, 12)
-                                    .contentShape(Rectangle())
-                                }
-                                .buttonStyle(.plain)
-                                if theme != SoundTheme.allCases.last {
-                                    Divider()
-                                }
-                            }
-                        }
-                    }
+                    // MARK: Sound
+                    // v14.3 — Sound-Theme-Picker entfernt. Es gibt nur
+                    // noch EINE Klang-Variante („Gym"), die fest in
+                    // SoundsManager verdrahtet ist. User hat keinen
+                    // Konfigurationsbedarf mehr.
 
                     // MARK: Urlaubsmodus
                     SettingsCard(title: "Urlaubsmodus", systemImage: "palm.tree.fill") {

@@ -53,7 +53,13 @@ struct WaterHistoryChart: View {
                 RuleMark(y: .value("Ziel", water.dailyGoal))
                     .foregroundStyle(.secondary)
                     .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 4]))
-                    .annotation(position: .topTrailing, alignment: .trailing) {
+                    // v14.3 BUGFIX: `.topTrailing` positionierte die Annotation
+                    // AUSSERHALB der Chart-Bounds → pushte den ganzen VStack
+                    // breiter als den Screen → erlaubte horizontal swipe im
+                    // ScrollView-Parent. `.overlay` legt die Annotation
+                    // INNERHALB der Chart-Bounding-Box, alignment bezieht sich
+                    // dann auf die Mark selbst.
+                    .annotation(position: .overlay, alignment: .topTrailing) {
                         Text("Ziel")
                             .font(.caption2)
                             .foregroundStyle(.secondary)

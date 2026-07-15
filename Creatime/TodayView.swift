@@ -88,6 +88,9 @@ struct TodayView: View {
                     .padding(.bottom, 32)
                     .animation(.snappy, value: store.vacationEnabled)
                 }
+                // v14.3 DEFENSIVE: gleicher Fix wie HistoryView, verhindert
+                // horizontalen Bounce wenn Layout mal überschießt.
+                .clipped()
 
                 ConfettiView(trigger: confettiTrigger)
             }
@@ -296,7 +299,6 @@ struct TodayView: View {
         withAnimation {
             if store.useFreeze(for: Date()) {
                 Haptics.success()
-                sounds.previewTheme(sounds.theme)
                 sounds.playCreatineMark()
             } else {
                 Haptics.error()

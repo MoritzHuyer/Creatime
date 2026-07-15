@@ -44,6 +44,12 @@ struct HistoryView: View {
                     .padding(.bottom, 32)
                     .frame(maxWidth: .infinity)
                 }
+                // v14.3 DEFENSIVE: `.clipped()` verhindert horizontalen
+                // Bounce wenn eine zukünftige Sub-View mal Layout-Overshoot
+                // hat. Rewaite: ohne diese Zeile könnte ein breiter
+                // Chart-Annotation-Block den ScrollView-Container
+                // verbreitern und horizontales Swipen erlauben.
+                .clipped()
             }
             .navigationTitle("Fortschritt")
             .navigationBarTitleDisplayMode(.large)
