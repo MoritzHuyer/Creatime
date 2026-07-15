@@ -43,13 +43,19 @@ struct HistoryView: View {
                     .padding(.horizontal, 16)
                     .padding(.bottom, 32)
                     .frame(maxWidth: .infinity)
+                    // v14.4 KILLER-PRIMITIVE: `.fixedSize(horizontal: false)`
+                    // garantiert dass KEINE Sub-View den VStack breiter als den
+                    // Parent machen kann — selbst wenn ein Chart-Annotation-Block
+                    // oder Text-Layout überläuft, wird er auf Parent-Breite
+                    // geklemmt statt den Container zu verbreitern.
+                    .fixedSize(horizontal: false, vertical: false)
                 }
-                // v14.3 DEFENSIVE: `.clipped()` verhindert horizontalen
-                // Bounce wenn eine zukünftige Sub-View mal Layout-Overshoot
-                // hat. Rewaite: ohne diese Zeile könnte ein breiter
-                // Chart-Annotation-Block den ScrollView-Container
-                // verbreitern und horizontales Swipen erlauben.
+                // v14.3+14.4 DEFENSIVE: `.clipped()` clippt alles visuell
+                // am ScrollView-Rand. `.scrollBounceBehavior(.basedOnSize)`
+                // deaktiviert JEDEN horizontalen Bounce automatisch wenn der
+                // Content horizontal passt (iOS 16.4+).
                 .clipped()
+                .scrollBounceBehavior(.basedOnSize, axes: .horizontal)
             }
             .navigationTitle("Fortschritt")
             .navigationBarTitleDisplayMode(.large)

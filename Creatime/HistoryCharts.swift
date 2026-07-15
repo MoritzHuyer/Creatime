@@ -49,23 +49,15 @@ struct WaterHistoryChart: View {
                     .cornerRadius(3)
                 }
 
-                // Tagesziel als horizontale Linie.
+                // v14.4: Annotation KOMPLETT entfernt — nicht der allerletzte
+                // Versuch war's wert: 4 bisherige Versuche haben nicht
+                // gegriffen, also räumen wir die wahrscheinlichste
+                // Quelle strukturell weg. Die gestrichelte Linie selbst
+                // kommuniziert das Ziel visuell; ein „Ziel"-Text-Label
+                // war nice-to-have aber kritisch als Overflow-Quelle.
                 RuleMark(y: .value("Ziel", water.dailyGoal))
                     .foregroundStyle(.secondary)
                     .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 4]))
-                    // v14.3 BUGFIX: `.topTrailing` positionierte die Annotation
-                    // AUSSERHALB der Chart-Bounds → pushte den ganzen VStack
-                    // breiter als den Screen → erlaubte horizontal swipe im
-                    // ScrollView-Parent. `.overlay` legt die Annotation
-                    // INNERHALB der Chart-Bounding-Box, alignment bezieht sich
-                    // dann auf die Mark selbst.
-                    .annotation(position: .overlay, alignment: .topTrailing) {
-                        Text("Ziel")
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                            .padding(.horizontal, 4)
-                            .background(.background.opacity(0.8), in: Capsule())
-                    }
             }
             .chartYAxis {
                 AxisMarks(position: .leading) { value in

@@ -86,11 +86,15 @@ struct TodayView: View {
                     }
                     .padding(.horizontal, 16)
                     .padding(.bottom, 32)
+                    // v14.4 KILLER-PRIMITIVE (analog HistoryView): verhindert
+                    // dass Sub-Views den VStack horizontal verbreitern.
+                    .fixedSize(horizontal: false, vertical: false)
                     .animation(.snappy, value: store.vacationEnabled)
                 }
-                // v14.3 DEFENSIVE: gleicher Fix wie HistoryView, verhindert
-                // horizontalen Bounce wenn Layout mal überschießt.
+                // v14.3+14.4 DEFENSIVE: `.clipped()` + `.scrollBounceBehavior`
+                // horizontal-axis deaktiviert wenn Content passt (iOS 16.4+).
                 .clipped()
+                .scrollBounceBehavior(.basedOnSize, axes: .horizontal)
 
                 ConfettiView(trigger: confettiTrigger)
             }
