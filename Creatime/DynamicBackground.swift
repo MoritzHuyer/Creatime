@@ -42,7 +42,10 @@ struct DynamicBackground: View {
     }
 
     private var orbOpacity: Double {
-        colorScheme == .dark ? 0.40 : 0.16
+        // v13-Airy: dark-orb-Opacity reduziert (0.40 → 0.20), damit
+        // airySection Content (hairline border + sehr leichte elevation)
+        // nicht durch Opaque-Orbs überstrahlt wird.
+        colorScheme == .dark ? 0.20 : 0.16
     }
 
     private var orbDiameter: CGFloat {

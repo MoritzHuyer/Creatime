@@ -38,7 +38,7 @@ struct VacationBanner: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .liquidGlassCard()
+        .airySection()
         .accessibilityLabel("Urlaubsmodus aktiv bis \(until.formatted(date: .abbreviated, time: .omitted)). Tippen zum Bearbeiten.")
     }
 }

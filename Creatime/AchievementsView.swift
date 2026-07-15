@@ -1,13 +1,15 @@
 import SwiftUI
 
-// MARK: - Erfolge-Tab (v7 — Glass-Card-Stil)
+// MARK: - Erfolge-Tab (v13 — Airy)
 //
-// Layout-Philosophie: Hero-Ring + Next-Card + 3-Spalten-Badge-Grid.
+// Layout-Philosophie: keine Glass-Cards. Hero-Ring zentriert oben,
+// NextAchievement als Luftband, Badges im 3-Spalten-Grid mit
+// weißem background + sehr subtle Border.
 //
-// Reihenfolge (von oben nach unten):
-//   1. Hero-Ring (110pt) + freigeschaltet / Gesamt Zahl + Status-Text
-//   2. Next-Achievement-Card (Glass)
-//   3. AchievementSection (3-Spalten-Grid mit Glass-Badges)
+// Reihenfolge:
+//   1. Big Hero-Ring (200pt) + "2 von 5" + Status-Text
+//   2. Nächster-Erfolg Card (subtle Pill)
+//   3. "Alle Badges" 3-Spalten-Grid (subtle Tile pro Badge)
 
 struct AchievementsView: View {
     @Environment(CreatineStore.self) private var store
@@ -15,7 +17,6 @@ struct AchievementsView: View {
 
     @State private var showSettings = false
     @State private var selectedAchievement: Achievement?
-
     @State private var confettiTrigger = false
     @State private var celebrationToast: Achievement?
 
@@ -40,27 +41,56 @@ struct AchievementsView: View {
         lockedAchievements.min(by: { $0.days < $1.days })
     }
 
+    private var statusLine: String {
+        let unlocked = unlockedAchievements.count
+        let total = Achievement.all.count
+        if unlocked == 0 { return "Noch keine freigeschaltet — fang mit Tag 1 an." }
+        if unlocked == total { return "Wow, alle Erfolge freigeschaltet! 🏆" }
+        return "Weiter so — du bist auf dem Weg."
+    }
+
     var body: some View {
         NavigationStack {
             ZStack {
                 DynamicBackground()
-
                 ScrollView {
-                    VStack(spacing: 22) {
-                        heroHeader
+                    VStack(alignment: .leading, spacing: 28) {
+                        bigHeroRing
+                        Text("Deine Errungenschaften")
+                            .font(.headline)
+                            .frame(maxWidth: .infinity, alignment: .center)
+                        Text(statusLine)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                            .frame(maxWidth: .infinity, alignment: .center)
 
-                        nextAchievementCard
+                        if let next = nextAchievement, next.days > 0 {
+                            NextAchievementPill(
+                                emoji: next.emoji,
+                                title: next.title,
+                                progress: store.bestStreak,
+                                goal: next.days,
+                                tint: themeManager.theme.primary
+                            )
+                        }
 
-                        AchievementSection(
-                            unlocked: unlockedAchievements,
-                            locked: lockedAchievements,
-                            columns: columns,
-                            onSelect: { selectedAchievement = $0 }
-                        )
+                        VStack(alignment: .leading, spacing: 12) {
+                            Label("Alle Badges", systemImage: "trophy.fill")
+                                .font(.subheadline.bold())
+                            LazyVGrid(columns: columns, spacing: 12) {
+                                ForEach(unlockedAchievements) { a in
+                                    BadgeTile(achievement: a, unlocked: true)
+                                        .onTapGesture { selectedAchievement = a }
+                                }
+                                ForEach(lockedAchievements) { a in
+                                    BadgeTile(achievement: a, unlocked: false)
+                                        .onTapGesture { selectedAchievement = a }
+                                }
+                            }
+                        }
                     }
                     .padding(.horizontal, 16)
-                    .padding(.vertical, 16)
-                    .frame(maxWidth: .infinity)
+                    .padding(.bottom, 32)
                 }
 
                 ConfettiView(trigger: confettiTrigger)
@@ -79,19 +109,14 @@ struct AchievementsView: View {
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        showSettings = true
-                    } label: {
+                    Button { showSettings = true } label: {
                         Image(systemName: "gearshape.fill")
                             .foregroundStyle(.secondary)
                     }
-                    .accessibilityLabel("Einstellungen öffnen")
                 }
             }
         }
-        .sheet(isPresented: $showSettings) {
-            SettingsView()
-        }
+        .sheet(isPresented: $showSettings) { SettingsView() }
         .sheet(item: $selectedAchievement) { achievement in
             AchievementDetailSheet(achievement: achievement, unlocked: isUnlocked(achievement))
                 .presentationDetents([.medium])
@@ -101,6 +126,41 @@ struct AchievementsView: View {
             fireConfetti(for: newly)
         }
         .animation(.snappy, value: celebrationToast)
+    }
+
+    private var bigHeroRing: some View {
+        let unlocked = unlockedAchievements.count
+        let total = max(1, Achievement.all.count)
+        let pct = Double(unlocked) / Double(total)
+        return ZStack {
+            Circle()
+                .stroke(themeManager.theme.primary.opacity(0.18), lineWidth: 14)
+                .frame(width: 200, height: 200)
+            Circle()
+                .trim(from: 0, to: pct)
+                .stroke(
+                    LinearGradient(
+                        colors: [themeManager.theme.primary, themeManager.theme.primary.opacity(0.6)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    style: StrokeStyle(lineWidth: 14, lineCap: .round)
+                )
+                .rotationEffect(.degrees(-90))
+                .frame(width: 200, height: 200)
+                .animation(.snappy, value: unlocked)
+            VStack(spacing: 0) {
+                Text("\(unlocked)")
+                    .font(.system(size: 64, weight: .bold, design: .rounded))
+                    .foregroundStyle(themeManager.theme.primary)
+                    .contentTransition(.numericText())
+                Text("von \(total)")
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.top, 16)
     }
 
     private func fireConfetti(for milestone: Int) {
@@ -119,134 +179,56 @@ struct AchievementsView: View {
             store.acknowledgeLatestMilestone()
         }
     }
-
-    // MARK: - Hero-Ring (110pt)
-
-    private var heroHeader: some View {
-        let unlockedCount = unlockedAchievements.count
-        let totalCount = Achievement.all.count
-        let pct = Double(unlockedCount) / Double(max(1, totalCount))
-
-        return VStack(spacing: 12) {
-            ZStack {
-                Circle()
-                    .stroke(Color.accentColor.opacity(0.18), lineWidth: 12)
-                Circle()
-                    .trim(from: 0, to: pct)
-                    .stroke(
-                        LinearGradient(
-                            colors: [themeManager.theme.primary, themeManager.theme.primary.opacity(0.6)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ),
-                        style: StrokeStyle(lineWidth: 12, lineCap: .round)
-                    )
-                    .rotationEffect(.degrees(-90))
-                    .animation(.snappy, value: unlockedCount)
-                VStack(spacing: 0) {
-                    Text("\(unlockedCount)")
-                        .font(.system(size: 56, weight: .bold, design: .rounded))
-                        .foregroundStyle(themeManager.theme.primary)
-                        .contentTransition(.numericText())
-                    Text("von \(totalCount)")
-                        .font(.caption.weight(.medium))
-                        .foregroundStyle(.secondary)
-                }
-            }
-            .frame(width: 140, height: 140)
-            .padding(8)
-
-            Text(unlockedCount == 0
-                 ? "Noch keine freigeschaltet — fang mit Tag 1 an."
-                 : unlockedCount == totalCount
-                     ? "Wow, alle Erfolge freigeschaltet! 🏆"
-                     : "Weiter so — du bist auf dem Weg.")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 8)
-    }
-
-    // MARK: - Next-Achievement-Card
-
-    @ViewBuilder
-    private var nextAchievementCard: some View {
-        if let next = nextAchievement {
-            let remaining: Int = {
-                if next.days == 0 { return 0 }
-                return max(0, next.days - store.bestStreak)
-            }()
-
-            HStack(alignment: .center, spacing: 14) {
-                Text(next.emoji)
-                    .font(.system(size: 44))
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Als Nächstes")
-                        .font(.caption.bold())
-                        .foregroundStyle(.secondary)
-                    Text(next.title)
-                        .font(.headline)
-                    Text(next.days == 0
-                         ? "Markiere deinen ersten Tag, um zu starten."
-                         : "Noch \(remaining) Tage Streak nötig.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                Spacer(minLength: 0)
-                if next.days > 0 {
-                    Text("\(store.bestStreak)/\(next.days)")
-                        .font(.system(.subheadline, design: .rounded).weight(.bold))
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 5)
-                        .foregroundStyle(themeManager.theme.primary)
-                        .background(themeManager.theme.primary.opacity(0.15), in: Capsule())
-                }
-            }
-            .padding(16)
-            .liquidGlassCard()
-        }
-    }
 }
 
-// MARK: - AchievementSection (3-Spalten-Grid mit Glass-Badges)
+// MARK: - NextAchievementPill (subtle pill with progress)
 
-struct AchievementSection: View {
-    let unlocked: [Achievement]
-    let locked: [Achievement]
-    let columns: [GridItem]
-    let onSelect: (Achievement) -> Void
+struct NextAchievementPill: View {
+    let emoji: String
+    let title: String
+    let progress: Int
+    let goal: Int
+    let tint: Color
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Label("Alle Errungenschaften", systemImage: "trophy.fill")
-                .font(.subheadline.bold())
-
-            LazyVGrid(columns: columns, spacing: 12) {
-                ForEach(unlocked) { a in
-                    AchievementBadge(achievement: a, unlocked: true)
-                        .onTapGesture { onSelect(a) }
-                }
-                ForEach(locked) { a in
-                    AchievementBadge(achievement: a, unlocked: false)
-                        .onTapGesture { onSelect(a) }
-                }
+        HStack(spacing: 14) {
+            Text(emoji)
+                .font(.system(size: 32))
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Nächster Erfolg: \(title)")
+                    .font(.subheadline.weight(.semibold))
+                ProgressView(value: Double(progress), total: Double(max(1, goal)))
+                    .tint(tint)
+                    .frame(maxWidth: 200)
             }
+            Spacer(minLength: 0)
+            Text("\(progress)/\(goal)")
+                .font(.subheadline.weight(.bold))
+                .padding(.horizontal, 10)
+                .padding(.vertical, 5)
+                .foregroundStyle(tint)
+                .background(tint.opacity(0.15), in: Capsule())
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .background(Color(.systemBackground), in: RoundedRectangle(cornerRadius: 14))
+        .overlay {
+            RoundedRectangle(cornerRadius: 14)
+                .strokeBorder(Color.black.opacity(0.06), lineWidth: 0.5)
         }
     }
 }
 
-// MARK: - AchievementBadge (Glass-Card-Style)
+// MARK: - BadgeTile (subtle tile, NOT glass)
 
-struct AchievementBadge: View {
+struct BadgeTile: View {
     let achievement: Achievement
     let unlocked: Bool
 
     var body: some View {
         VStack(spacing: 6) {
             Text(achievement.emoji)
-                .font(.system(size: 36))
+                .font(.system(size: 32))
                 .grayscale(unlocked ? 0 : 1)
                 .opacity(unlocked ? 1 : 0.45)
             Text(achievement.title)
@@ -260,15 +242,19 @@ struct AchievementBadge: View {
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
         }
-        .frame(maxWidth: .infinity, minHeight: 110)
-        .padding(.vertical, 12)
+        .frame(maxWidth: .infinity, minHeight: 100)
+        .padding(.vertical, 10)
         .padding(.horizontal, 6)
-        .liquidGlassCard()
+        .background(Color(.systemBackground), in: RoundedRectangle(cornerRadius: 14))
+        .overlay {
+            RoundedRectangle(cornerRadius: 14)
+                .strokeBorder(Color.black.opacity(unlocked ? 0.06 : 0.04), lineWidth: 0.5)
+        }
         .accessibilityLabel("\(achievement.title), \(unlocked ? "freigeschaltet" : "gesperrt — \(achievement.subtitle)")")
     }
 }
 
-// MARK: - Detail-Sheet für ein Badge
+// MARK: - Achievement Detail Sheet
 
 private struct AchievementDetailSheet: View {
     let achievement: Achievement
@@ -307,7 +293,7 @@ private struct AchievementDetailSheet: View {
     }
 }
 
-// MARK: - "Neu freigeschaltet!"-Toast
+// MARK: - "Neu freigeschaltet!"-Toast (subtle, kept for celebrations)
 
 struct CelebrationToast: View {
     let achievement: Achievement

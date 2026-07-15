@@ -97,7 +97,7 @@ struct PhotoStreakSection: View {
             }
         }
         .padding()
-        .liquidGlassCard()
+        .airySection()
         .sheet(isPresented: $showPicker) {
             PhotoStreakPicker { image in
                 if let image {

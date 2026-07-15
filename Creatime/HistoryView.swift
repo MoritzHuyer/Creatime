@@ -1,21 +1,21 @@
 import SwiftUI
 
-// MARK: - Fortschritts-Tab (v7 — Glass-Card-Stil)
+// MARK: - Fortschritts-Tab (v13 — Airy / inline)
 //
-// Layout-Philosophie: 9 klar getrennte Sektionen mit großzügigem Abstand
-// (22pt). Jede nutzt `.liquidGlassCard()` als Hintergrund.
+// Layout-Philosophie: 8 Sections mit 28pt Atmung statt 22pt Card-Spacing.
+// Inline-Komponenten ohne Glass-Card-Wrapper, eigene Subtle-Tiles für
+// Stat-Rows. Genau EINE inline StreakShareBanner-Definition.
 //
-// Reihenfolge (von oben nach unten):
-//   1. Vacation-Banner (selten)
-//   2. 6er-Stat-Grid (2×3, glass): Streak, Creatine-Quote, Wasser-Ø,
-//      Buddy, Mood-Ø, Consistency-Score
-//   3. Mood-HistoryChart (7-Bar-Chart)
-//   4. Streak-Share-Banner
-//   5. InsightsSection (4 Sub-Rows)
-//   6. Wochenverlauf (Wasser + Creatin Charts)
-//   7. BuddyView (komplett)
-//   8. MonthCalendar mit DayCell
-//   9. PhotoStreakSection
+// Reihenfolge:
+//   1. 6er-Stat-Grid 2×3
+//   2. Mood-HistoryChart (inline)
+//   3. StreakShare-Banner (lila Pill, inline defined)
+//   4. Insights (großer Score-Ring + Vergessen am Tag + Wochenvergleich)
+//   5. WaterHistoryChart (inline, bg.clear)
+//   6. CreatineHistoryChart (inline, bg.clear)
+//   7. BuddyView (airySection)
+//   8. MonthCalendar (white tile w/ border)
+//   9. PhotoStreakSection (airySection)
 
 struct HistoryView: View {
     @Environment(CreatineStore.self) private var store
@@ -24,47 +24,24 @@ struct HistoryView: View {
 
     @State private var showSettings = false
 
-    private let calendar = Calendar.current
-
     var body: some View {
         NavigationStack {
             ZStack {
                 DynamicBackground()
-
                 ScrollView {
-                    VStack(spacing: 22) {
-
-                        // VacationBanner sitzt im Heute-Tab — hier nur
-                        // Listen-Ansicht ohne weiteren Tap-Handler.
-
+                    VStack(alignment: .leading, spacing: 28) {
                         statGrid
-
                         MoodHistoryChart()
-                            .liquidGlassCard()
-
                         StreakShareBanner()
-                            .liquidGlassCard()
-
-                        InsightsSection()
-                            .liquidGlassCard()
-
-                        VStack(spacing: 14) {
-                            WaterHistoryChart()
-                                .liquidGlassCard()
-                            CreatineHistoryChart()
-                                .liquidGlassCard()
-                        }
-
+                        insightsSection
+                        WaterHistoryChart()
+                        CreatineHistoryChart()
                         BuddyView()
-
                         MonthCalendar()
-                            .liquidGlassCard()
-
                         PhotoStreakSection()
-                            .liquidGlassCard()
                     }
                     .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
+                    .padding(.bottom, 32)
                     .frame(maxWidth: .infinity)
                 }
             }
@@ -72,9 +49,7 @@ struct HistoryView: View {
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        showSettings = true
-                    } label: {
+                    Button { showSettings = true } label: {
                         Image(systemName: "gearshape.fill")
                             .foregroundStyle(.secondary)
                     }
@@ -82,101 +57,187 @@ struct HistoryView: View {
                 }
             }
         }
-        .sheet(isPresented: $showSettings) {
-            SettingsView()
-        }
+        .sheet(isPresented: $showSettings) { SettingsView() }
     }
 
-    // MARK: - 6er-Stat-Grid (2×3 Glass-Cards)
+    // MARK: - 6er Stat-Grid 2×3
 
     private var statGrid: some View {
         VStack(spacing: 12) {
             HStack(spacing: 12) {
-                StatTile(
-                    icon: "flame.fill",
-                    tint: .orange,
-                    label: "Aktuelle Streak",
-                    value: "\(store.currentStreak)",
-                    suffix: "Tage"
-                )
-                StatTile(
-                    icon: "checkmark.seal.fill",
-                    tint: .green,
-                    label: "Creatine-Quote",
-                    value: "\(Int(store.last30DaysRate * 100))",
-                    suffix: "% 30T"
-                )
-                StatTile(
-                    icon: "drop.fill",
-                    tint: .cyan,
-                    label: "Wasser-Ø (7T)",
-                    value: formatLiters(water.weeklyAverage),
-                    suffix: "Liter"
-                )
+                SimpleStatTile(icon: "flame.fill", tint: .orange,
+                               label: "Aktuelle Streak",
+                               value: "\(store.currentStreak)", suffix: nil)
+                SimpleStatTile(icon: "checkmark.seal.fill", tint: .green,
+                               label: "Beste Streak",
+                               value: "\(store.bestStreak)", suffix: nil)
+                SimpleStatTile(icon: "calendar", tint: Color.accentColor,
+                               label: "Tage gesamt",
+                               value: "\(store.totalDays)", suffix: nil)
             }
-
             HStack(spacing: 12) {
-                StatTile(
-                    icon: "person.2.fill",
-                    tint: .purple,
-                    label: "Buddy",
-                    value: "\(max(0, store.currentStreak - 0))",
-                    suffix: "vs Lead"
-                )
-                StatTile(
-                    icon: "face.smiling",
-                    tint: .pink,
-                    label: "Mood-Ø",
-                    value: averageMoodLabel,
-                    suffix: "Letzte 7T"
-                )
-                StatTile(
-                    icon: "gauge.with.dots.needle.50percent",
-                    tint: consistencyTint(store.consistencyScore),
-                    label: "Konsistenz",
-                    value: "\(store.consistencyScore)",
-                    suffix: "/ 100"
-                )
+                SimpleStatTile(icon: "chart.line.uptrend.xyaxis", tint: .indigo,
+                               label: "Letzte 30 Tage",
+                               value: "\(Int(store.last30DaysRate * 100))", suffix: "%")
+                SimpleStatTile(icon: "drop.fill", tint: .cyan,
+                               label: "Ø Wasser (7 Tage)",
+                               value: formatLiters(water.weeklyAverage), suffix: "L")
+                SimpleStatTile(icon: "star.fill", tint: .yellow,
+                               label: "Perfekte Tage",
+                               value: "\(store.perfectDaysLast30)", suffix: nil)
             }
         }
+    }
+
+    // MARK: - Insights Section: 22-Ring + Wochenvergleich + Vergessen am Tag
+
+    private var insightsSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack(spacing: 0) {
+                // Big Score Ring (22-er Ersatz)
+                VStack(spacing: 4) {
+                    ZStack {
+                        Circle()
+                            .stroke(Color(.tertiarySystemFill), lineWidth: 10)
+                            .frame(width: 110, height: 110)
+                        Circle()
+                            .trim(from: 0, to: min(1.0, Double(store.consistencyScore) / 100.0))
+                            .stroke(
+                                LinearGradient(
+                                    colors: [Color.indigo, Color.indigo.opacity(0.7)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                ),
+                                style: StrokeStyle(lineWidth: 10, lineCap: .round)
+                            )
+                            .rotationEffect(.degrees(-90))
+                            .frame(width: 110, height: 110)
+                            .animation(.snappy, value: store.consistencyScore)
+                        VStack(spacing: 0) {
+                            Text("\(store.consistencyScore)")
+                                .font(.system(size: 30, weight: .bold, design: .rounded))
+                                .foregroundStyle(.indigo)
+                            Text("Score")
+                                .font(.caption2.weight(.medium))
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    Text("Die geht weiter")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.indigo)
+                }
+                .frame(maxWidth: .infinity)
+
+                Divider()
+                    .frame(height: 110)
+                    .padding(.horizontal, 8)
+
+                // Vergessen am Tag (Mo-So Bars)
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Vergessen am Tag")
+                        .font(.caption.bold())
+                        .foregroundStyle(.secondary)
+                    HStack(alignment: .bottom, spacing: 5) {
+                        ForEach(weekdayMissBars(), id: \.label) { entry in
+                            VStack(spacing: 4) {
+                                RoundedRectangle(cornerRadius: 2)
+                                    .fill(entry.misses > 0
+                                          ? Color.orange.opacity(0.85)
+                                          : Color(.tertiarySystemFill))
+                                    .frame(width: 8, height: max(4, CGFloat(entry.misses) * 8))
+                                Text(entry.label)
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                            }
+                            .frame(maxWidth: .infinity)
+                        }
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+
+            Divider()
+
+            // 3-Metric Vergleich Diese Woche / Letzte / Trend
+            HStack(spacing: 0) {
+                weekMetric(label: "Diese Woche",
+                           value: formatLiters(water.thisWeekAverageML),
+                           tint: .blue)
+                weekMetric(label: "Letzte Woche",
+                           value: formatLiters(water.lastWeekAverageML),
+                           tint: .secondary)
+                weekMetric(label: "Trend",
+                           value: trendDelta(),
+                           tint: trendIsPositive() ? .green : .orange)
+            }
+        }
+        .airySection()
+    }
+
+    private func weekMetric(label: String, value: String, tint: Color) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(label)
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(.secondary)
+            Text(value)
+                .font(.system(.title3, design: .rounded).weight(.bold))
+                .foregroundStyle(tint)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func trendIsPositive() -> Bool {
+        water.lastWeekAverageML > 0
+            && water.thisWeekAverageML >= water.lastWeekAverageML
+    }
+
+    private func trendDelta() -> String {
+        let last = water.lastWeekAverageML
+        guard last > 0 else { return "—" }
+        let delta = Double(water.thisWeekAverageML - last) / Double(last) * 100
+        let abs = Int(delta.rounded())
+        return (delta >= 0 ? "+" : "") + "\(abs)%"
+    }
+
+    private struct WeekdayBar: Hashable {
+        let label: String
+        let misses: Int
+    }
+
+    private func weekdayMissBars() -> [WeekdayBar] {
+        let labels = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"]
+        var counts = [Int](repeating: 0, count: 7)
+        let util = MetricsCalculator.forgetfulnessByWeekday(
+            takenDays: store.takenDays,
+            skippedDays: store.skippedDays,
+            daysBack: 90
+        )
+        for (wd, count) in util {
+            // Calendar.weekday: 1 = Sunday, 2 = Monday, ..., 7 = Saturday
+            // Wir wollen Index: 0=Mo, 1=Di, 2=Mi, 3=Do, 4=Fr, 5=Sa, 6=So
+            let idx = (wd + 5) % 7
+            if (0..<7).contains(idx) {
+                counts[idx] = count
+            }
+        }
+        return zip(labels, counts).map { WeekdayBar(label: $0.0, misses: $0.1) }
     }
 
     private func formatLiters(_ ml: Int) -> String {
         let v = Double(ml) / 1000
-        return v.formatted(.number.precision(.fractionLength(0...2)))
-            .replacingOccurrences(of: ".", with: ",")
-    }
-
-    private var averageMoodLabel: String {
-        let recent = (0..<7).compactMap { offset -> Double? in
-            let date = Calendar.current.date(byAdding: .day, value: -offset, to: Date()) ?? Date()
-            let key = DayKey.string(for: date)
-            guard let mood = store.moodByDay[key],
-                  let score = MoodHistoryChart.moodScore(for: mood) else { return nil }
-            return score
-        }
-        guard !recent.isEmpty else { return "—" }
-        let avg = recent.reduce(0, +) / Double(recent.count)
-        return MoodHistoryChart.emoji(for: Int(avg.rounded()))
-    }
-
-    private func consistencyTint(_ score: Int) -> Color {
-        switch score {
-        case 80...:  return .green
-        case 50..<80: return .blue
-        default:     return .orange
-        }
+        let s = v.formatted(.number.precision(.fractionLength(0...2)))
+        return s.replacingOccurrences(of: ".", with: ",")
     }
 }
 
-// MARK: - Eine Stat-Kachel (glass)
+// MARK: - SimpleStatTile (v13 — white tile + subtle shadow / border)
 
-private struct StatTile: View {
+struct SimpleStatTile: View {
     let icon: String
     let tint: Color
     let label: String
     let value: String
-    let suffix: String
+    let suffix: String?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -185,127 +246,89 @@ private struct StatTile: View {
                     .foregroundStyle(tint)
                     .font(.caption.bold())
                 Text(label)
-                    .font(.caption2)
+                    .font(.caption2.weight(.medium))
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
             }
-
-            HStack(alignment: .firstTextBaseline, spacing: 4) {
+            HStack(alignment: .firstTextBaseline, spacing: 3) {
                 Text(value)
-                    .font(.system(.title2, design: .rounded).weight(.bold))
+                    .font(.system(.title, design: .rounded).weight(.bold))
                     .foregroundStyle(tint)
                     .contentTransition(.numericText())
                     .minimumScaleFactor(0.6)
                     .lineLimit(1)
-                Text(suffix)
-                    .font(.caption2)
-                    .foregroundStyle(.tertiary)
-                    .lineLimit(1)
+                if let suffix {
+                    Text(suffix)
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                        .lineLimit(1)
+                }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(12)
+        .background(Color(.systemBackground), in: RoundedRectangle(cornerRadius: 14))
+        .overlay {
+            RoundedRectangle(cornerRadius: 14)
+                .strokeBorder(Color.black.opacity(0.06), lineWidth: 0.5)
+        }
+        .shadow(color: .black.opacity(0.04), radius: 6, x: 0, y: 2)
         .frame(minHeight: 78, alignment: .topLeading)
     }
 }
 
-// MARK: - InsightsSection (4 Sub-Rows in einer Glass-Card)
+// MARK: - StreakShareBanner (v13 — purple pill, inline defined exactly ONCE)
 
-struct InsightsSection: View {
+struct StreakShareBanner: View {
     @Environment(CreatineStore.self) private var store
-    @Environment(WaterStore.self) private var water
+
+    private var bestSnapshot: Int { store.bestStreak }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Label("Insights", systemImage: "sparkles")
-                .font(.subheadline.bold())
-                .foregroundStyle(.primary)
-
-            VStack(spacing: 0) {
-                InsightRow(
-                    icon: "drop.fill",
-                    tint: .blue,
-                    title: "Wasser-Ø diese Woche",
-                    value: formatLiters(water.thisWeekAverageML),
-                    suffix: "L"
-                )
-                Divider().padding(.vertical, 6)
-                InsightRow(
-                    icon: "chart.line.uptrend.xyaxis",
-                    tint: .blue.opacity(0.8),
-                    title: "Wochenvergleich",
-                    value: water.weekOverWeekText,
-                    suffix: ""
-                )
-                Divider().padding(.vertical, 6)
-                InsightRow(
-                    icon: "exclamationmark.triangle.fill",
-                    tint: .orange,
-                    title: "Vergesslichster Wochentag",
-                    value: topForgetfulWeekdayLabel,
-                    suffix: ""
-                )
-                Divider().padding(.vertical, 6)
-                InsightRow(
-                    icon: "star.fill",
-                    tint: .yellow,
-                    title: "Score (Konsistenz 90T)",
-                    value: "\(store.consistencyScore)",
-                    suffix: "/ 100"
-                )
+        Button {
+            Haptics.tapMedium()
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "square.and.arrow.up.fill")
+                    .foregroundStyle(.white)
+                    .font(.subheadline.weight(.bold))
+                    .frame(width: 28, height: 28)
+                    .background(.white.opacity(0.2), in: Circle())
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("Streak teilen")
+                        .font(.subheadline.weight(.semibold))
+                    Text("Dein \(store.currentStreak)-Tage-Streak im Bild verschicken.")
+                        .font(.caption2)
+                        .foregroundStyle(.white.opacity(0.85))
+                }
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .foregroundStyle(.white.opacity(0.7))
+                    .font(.caption.bold())
             }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+            .background(
+                LinearGradient(
+                    colors: [Color.indigo, Color.purple],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                ),
+                in: RoundedRectangle(cornerRadius: 14)
+            )
+            .foregroundStyle(.white)
         }
-        .padding(16)
-    }
-
-    private var topForgetfulWeekdayLabel: String {
-        let labels = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"]
-        guard let top = store.topForgetfulWeekday else { return "— keine Daten" }
-        let idx = (top.weekday - 1 + 7) % 7
-        return "\(labels[idx]) (\(top.count)×)"
-    }
-
-    private func formatLiters(_ ml: Int) -> String {
-        let v = Double(ml) / 1000
-        return v.formatted(.number.precision(.fractionLength(0...2)))
-            .replacingOccurrences(of: ".", with: ",")
+        .buttonStyle(.plain)
+        .accessibilityLabel("Streak-Karte teilen, \(store.currentStreak) Tage in Folge")
     }
 }
 
-private struct InsightRow: View {
-    let icon: String
-    let tint: Color
-    let title: String
-    let value: String
-    let suffix: String
-
-    var body: some View {
-        HStack(spacing: 10) {
-            Image(systemName: icon)
-                .foregroundStyle(tint)
-                .frame(width: 22)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Text(value + (suffix.isEmpty ? "" : " " + suffix))
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.primary)
-                    .contentTransition(.numericText())
-            }
-            Spacer(minLength: 0)
-        }
-    }
-}
-
-// MARK: - MonthCalendar mit DayCell (Glass-Card-Inhalt)
+// MARK: - MonthCalendar (clean inline)
 
 struct MonthCalendar: View {
     @Environment(CreatineStore.self) private var store
-
     @State private var displayedMonth = Date()
-
     private let calendar = Calendar.current
     private let dayColumns = Array(repeating: GridItem(.flexible()), count: 7)
 
@@ -319,11 +342,9 @@ struct MonthCalendar: View {
         guard let monthInterval = calendar.dateInterval(of: .month, for: displayedMonth),
               let dayCount = calendar.range(of: .day, in: .month, for: displayedMonth)?.count
         else { return [] }
-
         let firstDay = monthInterval.start
         let weekdayOfFirst = calendar.component(.weekday, from: firstDay)
         let leadingBlanks = (weekdayOfFirst - calendar.firstWeekday + 7) % 7
-
         var cells: [Date?] = Array(repeating: nil, count: leadingBlanks)
         for offset in 0..<dayCount {
             cells.append(calendar.date(byAdding: .day, value: offset, to: firstDay))
@@ -332,11 +353,11 @@ struct MonthCalendar: View {
     }
 
     var body: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 16) {
             HStack {
                 Button { changeMonth(by: -1) } label: {
                     Image(systemName: "chevron.left")
-                        .font(.subheadline)
+                        .font(.subheadline.weight(.semibold))
                         .foregroundStyle(.secondary)
                 }
                 Spacer()
@@ -345,44 +366,41 @@ struct MonthCalendar: View {
                 Spacer()
                 Button { changeMonth(by: 1) } label: {
                     Image(systemName: "chevron.right")
-                        .font(.subheadline)
+                        .font(.subheadline.weight(.semibold))
                         .foregroundStyle(.secondary)
                 }
             }
-            .padding(.horizontal, 4)
 
-            LazyVGrid(columns: dayColumns, spacing: 8) {
+            LazyVGrid(columns: dayColumns, spacing: 10) {
                 ForEach(0..<7, id: \.self) { i in
                     Text(weekdaySymbols[i])
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(.tertiary)
                 }
                 ForEach(Array(monthCells.enumerated()), id: \.offset) { _, cell in
                     if let day = cell {
                         DayCell(day: day)
                     } else {
-                        Color.clear.frame(height: 32)
+                        Color.clear.frame(height: 36)
                     }
                 }
             }
         }
-        .padding(16)
+        .padding(14)
+        .background(Color(.systemBackground), in: RoundedRectangle(cornerRadius: 14))
     }
 
     private func changeMonth(by value: Int) {
         if let newMonth = calendar.date(byAdding: .month, value: value, to: displayedMonth) {
-            withAnimation {
-                displayedMonth = newMonth
-            }
+            withAnimation { displayedMonth = newMonth }
         }
     }
 }
 
-// MARK: - DayCell (einfache Variante — wird in v8 durch ActivityRingDayCell ersetzt)
+// MARK: - DayCell
 
 struct DayCell: View {
     @Environment(CreatineStore.self) private var store
-
     let day: Date
 
     var body: some View {
@@ -396,20 +414,18 @@ struct DayCell: View {
         ZStack {
             Circle()
                 .fill(fillColor(taken: taken, skipped: skipped, frozen: frozen))
-                .frame(width: 30, height: 30)
-
+                .frame(width: 32, height: 32)
             Text("\(dayNumber)")
                 .font(.callout)
                 .fontWeight(taken ? .bold : .regular)
                 .foregroundStyle(textColor(taken: taken, isFuture: isFuture))
-
             if isToday {
                 Circle()
-                    .stroke(Color.accentColor, lineWidth: 1.5)
-                    .frame(width: 34, height: 34)
+                    .strokeBorder(Color.accentColor, lineWidth: 1.5)
+                    .frame(width: 36, height: 36)
             }
         }
-        .frame(width: 36, height: 36)
+        .frame(width: 38, height: 38)
         .opacity(isFuture ? 0.5 : 1)
     }
 
@@ -422,7 +438,7 @@ struct DayCell: View {
 
     private func textColor(taken: Bool, isFuture: Bool) -> Color {
         if taken { return .white }
-        return isFuture ? Color(.tertiaryLabel) : Color.primary
+        return isFuture ? Color(.tertiaryLabel) : .primary
     }
 }
 

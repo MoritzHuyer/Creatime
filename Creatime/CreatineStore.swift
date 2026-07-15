@@ -517,6 +517,16 @@ final class CreatineStore {
         return Double(coveredCount) / 30.0
     }
 
+    /// Anzahl der letzten 30 Tage (inkl. heute), an denen Kreatin
+    /// genommen wurde (= taken, nicht skipped/frozen). Wird für die
+    /// v13 „Perfekte Tage"-Stat-Kachel im HistoryView verwendet.
+    var perfectDaysLast30: Int {
+        let calendar = Calendar.current
+        let cutoff = calendar.date(byAdding: .day, value: -30, to: Date()) ?? Date()
+        let cutoffKey = DayKey.string(for: cutoff)
+        return takenDays.filter { $0 >= cutoffKey }.count
+    }
+
     // MARK: - Streak-Schutz (1 Pause pro Woche)
 
     /// Wie oft in der aktuellen ISO-Woche schon pausiert (skip-typisch) wurde.

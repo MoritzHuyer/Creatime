@@ -88,7 +88,7 @@ struct WaterHistoryChart: View {
             .frame(height: 180)
         }
         .padding()
-        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16))
+        .background(Color.clear)
     }
 }
 
@@ -145,6 +145,6 @@ struct CreatineHistoryChart: View {
             .frame(height: 100)
         }
         .padding()
-        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16))
+        .background(Color.clear)
     }
 }

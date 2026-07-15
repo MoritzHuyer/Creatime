@@ -1,25 +1,25 @@
 import SwiftUI
 import UIKit
 
-// MARK: - Heute-Tab (v7 — Glass-Card-Stil)
+// MARK: - Heute-Tab (v13 — Airy / inline)
 //
-// Layout-Philosophie: klare Gliederung in 7–8 Karten mit großzügigem
-// Abstand (22pt). Jede Karte nutzt `.liquidGlassCard()` als Hintergrund.
+// Layout-Philosophie: freier Weißraum statt Card-Chrome. Jeder Bereich
+// atmet für sich, Glass nur noch in der RecoveryBuddy-Ausnahme
+// (wenn Streak gebrochen und Best-Streak >= 7).
 //
-// Reihenfolge (von oben nach unten):
-//   1. Vacation-Banner (nur wenn aktiv)
-//   2. Streak-Karte (🔥 + 64pt-Zahl + "Tage in Folge")
-//   3. Mood-Emoji-Reihe (5 Emojis + Labels in Glass-Card)
-//   4. Wochenübersicht (7 Kreise für letzte 7 Tage)
-//   5. Recovery-Buddy-Card (nur wenn getriggert, pink Glass)
-//   6. Großer Hauptbutton ("Kreatin genommen", 60pt)
-//   7. Pause/Freeze Menu (typografisch klein)
-//   8. WasserTrackerCard (volle Glass-Karte)
-//   9. Tip-of-the-Day Card
-//  10. Reminder-Zeit-Chip (klein, am Foot)
+// Reihenfolge (8 Sections, 28pt Spacing zwischen):
+//   1. Vacation-Banner (subtle Pill, conditional)
+//   2. Streak-Hero (🔥 + 64pt + "Tage in Folge" — INLINE)
+//   3. Mood-Emoji-Reihe (5 Emojis + Labels — INLINE)
+//   4. Wochenübersicht (T F S S M D M + 7 Kreise — INLINE)
+//   5. "Heute erledigt / Jetzt markieren" kleine Text-Button (NICHT 60pt!)
+//   6. Wasser-Hero ("1,8 Liter" + horizontaler Pill-Row — INLINE)
+//   7. Pause/Freeze Menu (subtle Capsule, conditional)
+//   8. Recovery-Buddy (subtle Card, conditional, nur wenn Streak gebrochen)
+//   9. Tip-of-the-Day (GELBER STRIP statt Glass-Card)
+//  10. Reminder-Footer-Chip mit Glocken-Icon
 
 struct TodayView: View {
-
     @Environment(CreatineStore.self) private var store
     @Environment(WaterStore.self) private var water
     @Environment(SoundsManager.self) private var sounds
@@ -37,8 +37,6 @@ struct TodayView: View {
         String(format: "%02d:%02d", reminderHour, reminderMinute)
     }
 
-    /// Ein Tipp pro Tag: Die Nummer des Tages im Jahr (1–366) bestimmt,
-    /// welcher Tipp dran ist — so wechselt er automatisch täglich.
     private var dailyTip: String {
         let dayOfYear = Calendar.current.ordinality(of: .day, in: .year, for: Date()) ?? 0
         return Self.tips[dayOfYear % Self.tips.count]
@@ -52,46 +50,68 @@ struct TodayView: View {
         "Verbinde Kreatin mit einer festen Routine, z. B. direkt zum Frühstück.",
     ]
 
+    private let moods: [(emoji: String, label: String, key: String)] = [
+        ("😐", "Schlecht", "neutral"),
+        ("😊", "OK",       "good"),
+        ("🤩", "Gut",      "great"),
+        ("🥵", "Stress",   "stressed"),
+        ("😴", "Erledigt", "tired"),
+    ]
+
+    private var selectedMood: String? { store.moodByDay[DayKey.today] }
+
+    private var shouldShowRecovery: Bool {
+        store.bestStreak >= 7 &&
+        store.currentStreak <= 1 &&
+        !store.takenToday &&
+        !store.skippedToday &&
+        !store.frozenToday
+    }
+
     var body: some View {
         NavigationStack {
             ZStack {
                 DynamicBackground()
 
                 ScrollView {
-                    VStack(spacing: 22) {
+                    VStack(alignment: .leading, spacing: 28) {
 
                         if store.vacationEnabled, let until = store.vacationUntil {
-                            VacationBanner(until: until) {
-                                showVacationSheet = true
-                            }
-                            .transition(.move(edge: .top).combined(with: .opacity))
+                            VacationBanner(until: until) { showVacationSheet = true }
+                                .transition(.move(edge: .top).combined(with: .opacity))
                         }
 
-                        streakCard
+                        // 1. Streak-Hero
+                        streakHero
 
-                        MoodEmojiPicker()
-                            .liquidGlassCard()
+                        // 2. Mood-Emojis
+                        moodSection
 
-                        WeekOverview()
-                            .liquidGlassCard()
+                        // 3. Week overview
+                        WeekOverviewInline()
 
-                        RecoveryBuddyCard(action: markAsTaken)
-                            .liquidGlassCard()
+                        // 4. Hauptaktion (small button)
+                        hauptaktionRow
 
-                        mainActionButton
+                        // 5. Wasser-Hero
+                        WasserHeroInline()
 
+                        // 6. Pause/Freeze menu
                         pauseControl
 
-                        WaterTrackerCard()
+                        // 7. RecoveryBuddy (conditional, subtle)
+                        if shouldShowRecovery {
+                            RecoveryBuddyInline(action: markAsTaken)
+                        }
 
-                        TipCard(tip: dailyTip)
-                            .liquidGlassCard()
+                        // 8. Tip-of-the-Day (yellow strip)
+                        tipStrip
 
+                        // 9. Reminder-Footer
                         reminderFooter
                     }
                     .padding(.horizontal, 16)
                     .padding(.bottom, 32)
-                    .frame(maxWidth: .infinity)
                     .animation(.snappy, value: store.vacationEnabled)
                 }
 
@@ -101,29 +121,25 @@ struct TodayView: View {
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        showSettings = true
-                    } label: {
+                    Button { showSettings = true } label: {
                         Image(systemName: "gearshape.fill")
                             .foregroundStyle(.secondary)
                     }
                     .accessibilityLabel("Einstellungen öffnen")
                 }
             }
-            .task { @MainActor in
-                await pushLiveActivityUpdate()
-            }
+            .task { await pushLiveActivityUpdate() }
             .onChange(of: store.currentStreak) { _, _ in
-                Task { @MainActor in await pushLiveActivityUpdate() }
+                Task { await pushLiveActivityUpdate() }
             }
             .onChange(of: store.takenToday) { _, _ in
-                Task { @MainActor in await pushLiveActivityUpdate() }
+                Task { await pushLiveActivityUpdate() }
             }
             .onChange(of: water.todayAmount) { _, _ in
-                Task { @MainActor in await pushLiveActivityUpdate() }
+                Task { await pushLiveActivityUpdate() }
             }
             .onChange(of: water.dailyGoal) { _, _ in
-                Task { @MainActor in await pushLiveActivityUpdate() }
+                Task { await pushLiveActivityUpdate() }
             }
         }
         .sheet(isPresented: $showTimeSheet) {
@@ -133,76 +149,133 @@ struct TodayView: View {
                 onSave: rescheduleNotifications
             )
             .presentationDetents([.height(280)])
-            .liquidGlassSheet()
         }
         .sheet(isPresented: $showVacationSheet) {
             VacationModeSheet()
                 .presentationDetents([.medium, .large])
-                .liquidGlassSheet()
         }
-        .sheet(isPresented: $showSettings) {
-            SettingsView()
-        }
+        .sheet(isPresented: $showSettings) { SettingsView() }
     }
 
-    // MARK: - Streak-Karte (Glass-Card)
+    // MARK: - Inline Sections
 
-    private var streakCard: some View {
-        VStack(spacing: 6) {
+    private var streakHero: some View {
+        VStack(spacing: 8) {
             Text("🔥")
                 .font(.system(size: 48))
             Text("\(store.currentStreak)")
                 .font(.system(size: 64, weight: .bold, design: .rounded))
                 .contentTransition(.numericText())
                 .monospacedDigit()
+                .foregroundStyle(.primary)
             Text("Tage in Folge")
                 .font(.subheadline.weight(.medium))
                 .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 18)
-        .liquidGlassCard()
+        .padding(.vertical, 12)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(store.currentStreak) Tage Streak in Folge")
     }
 
-    // MARK: - Hauptaktion (60pt hoch, full-width)
-
-    @ViewBuilder
-    private var mainActionButton: some View {
-        if store.skippedToday {
-            Button {} label: {
-                Label("Heute pausiert", systemImage: "pause.circle.fill")
-                    .font(.title3.weight(.semibold))
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 60)
+    private var moodSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Wie fühlst du dich heute?")
+                .font(.subheadline.bold())
+                .foregroundStyle(.secondary)
+            HStack(spacing: 6) {
+                ForEach(moods, id: \.key) { mood in
+                    Button {
+                        Haptics.tap()
+                        store.setMoodToday(mood.key)
+                    } label: {
+                        VStack(spacing: 4) {
+                            Text(mood.emoji)
+                                .font(.system(size: 32))
+                                .frame(width: 50, height: 50)
+                                .background(
+                                    Circle()
+                                        .fill(selectedMood == mood.key
+                                              ? Color.cyan.opacity(0.20)
+                                              : Color.clear)
+                                )
+                            Text(mood.label)
+                                .font(.caption2)
+                                .foregroundStyle(selectedMood == mood.key ? .primary : .secondary)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .scaleEffect(selectedMood == mood.key ? 1.05 : 1.0)
+                        .animation(.snappy, value: selectedMood)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("\(mood.label), Stimmung")
+                }
             }
-            .buttonStyle(.borderedProminent)
-            .tint(.orange)
-            .disabled(true)
-        } else if store.takenToday {
-            Button {} label: {
-                Label("Heute erledigt ✓", systemImage: "checkmark.circle.fill")
-                    .font(.title3.weight(.semibold))
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 60)
-            }
-            .buttonStyle(.borderedProminent)
-            .tint(.green)
-            .disabled(true)
-        } else {
-            Button(action: markAsTaken) {
-                Label("Kreatin genommen", systemImage: "checkmark.circle")
-                    .font(.title3.weight(.semibold))
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 60)
-            }
-            .buttonStyle(.borderedProminent)
-            .tint(.accentColor)
         }
     }
 
-    // MARK: - Pause/Freeze Menu
+    private var hauptaktionRow: some View {
+        HStack(spacing: 12) {
+            Image(systemName: store.takenToday
+                  ? "checkmark.circle.fill"
+                  : (store.skippedToday ? "pause.circle.fill" : "circle"))
+                .foregroundStyle(store.takenToday ? .green
+                                 : (store.skippedToday ? .orange : .secondary))
+                .font(.title3)
+            Text(store.takenToday
+                 ? "Heute erledigt"
+                 : (store.skippedToday ? "Heute pausiert" : "Heute offen"))
+                .font(.body.weight(.semibold))
+                .foregroundStyle(.secondary)
+            Spacer()
+            if !store.takenToday && !store.skippedToday {
+                Button(action: markAsTaken) {
+                    Label("Jetzt markieren", systemImage: "checkmark.circle")
+                        .font(.subheadline.weight(.semibold))
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(.accentColor)
+            }
+        }
+        .padding(.horizontal, 4)
+    }
+
+    private var tipStrip: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: "lightbulb.fill")
+                .foregroundStyle(.yellow)
+                .font(.title3)
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Tipp des Tages")
+                    .font(.caption.bold())
+                    .foregroundStyle(.secondary)
+                Text(dailyTip)
+                    .font(.subheadline)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(14)
+        .background(Color.yellow.opacity(0.12),
+                    in: RoundedRectangle(cornerRadius: 14))
+    }
+
+    private var reminderFooter: some View {
+        Button { showTimeSheet = true } label: {
+            HStack(spacing: 6) {
+                Image(systemName: "bell.fill")
+                    .font(.caption2)
+                Text("Erinnerung um \(reminderTimeText) Uhr")
+                    .font(.caption)
+            }
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 8)
+            .background(Color(.tertiarySystemFill), in: Capsule())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Erinnerungszeit ändern, aktuell \(reminderTimeText) Uhr")
+    }
 
     @ViewBuilder
     private var pauseControl: some View {
@@ -211,13 +284,12 @@ struct TodayView: View {
                 Button(action: skipToday) {
                     Label(
                         store.vacationEnabled
-                            ? "Heute pausieren (Urlaub unbegrenzt)"
-                            : "Heute pausieren (1× diese Woche)",
+                          ? "Heute pausieren (Urlaub unbegrenzt)"
+                          : "Heute pausieren (1× diese Woche)",
                         systemImage: "pause.fill"
                     )
                 }
                 .disabled(!store.canSkipToday)
-
                 if store.canFreezeToday {
                     Button(action: freezeToday) {
                         Label(
@@ -240,28 +312,7 @@ struct TodayView: View {
         }
     }
 
-    // MARK: - Reminder-Footer-Chip
-
-    private var reminderFooter: some View {
-        Button {
-            showTimeSheet = true
-        } label: {
-            HStack(spacing: 6) {
-                Image(systemName: "bell.fill")
-                    .font(.caption2)
-                Text("Erinnerung um \(reminderTimeText) Uhr")
-                    .font(.caption)
-            }
-            .foregroundStyle(.secondary)
-            .padding(.horizontal, 14)
-            .padding(.vertical, 8)
-            .background(Color(.tertiarySystemFill), in: Capsule())
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel("Erinnerungszeit ändern, aktuell \(reminderTimeText) Uhr")
-    }
-
-    // MARK: - Aktionen
+    // MARK: - Actions
 
     private func markAsTaken() {
         withAnimation {
@@ -336,61 +387,52 @@ struct TodayView: View {
     }
 }
 
-// MARK: - Wochenübersicht (Glass-Card-Inhalt)
+// MARK: - Inline Week Overview (v13 — INLINE, no card wrapper)
 
-struct WeekOverview: View {
+struct WeekOverviewInline: View {
     @Environment(CreatineStore.self) private var store
 
+    private let dayLabels = ["T", "F", "S", "S", "M", "D", "M"]
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Label("Diese Woche", systemImage: "calendar")
-                .font(.caption.bold())
-                .foregroundStyle(.secondary)
-
-            HStack(spacing: 10) {
-                ForEach(0..<7, id: \.self) { index in
-                    let daysBack = 6 - index
-                    let day = Calendar.current.date(byAdding: .day, value: -daysBack, to: Date()) ?? Date()
-                    let taken = store.isTaken(day)
-                    let skipped = store.isSkipped(day)
-                    let frozen = store.isFrozen(day)
-
-                    VStack(spacing: 6) {
-                        Text(day, format: .dateTime.weekday(.narrow))
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-
-                        ZStack {
+        HStack(spacing: 0) {
+            ForEach(0..<7, id: \.self) { i in
+                let daysBack = 6 - i
+                let day = Calendar.current.date(byAdding: .day, value: -daysBack, to: Date()) ?? Date()
+                let taken = store.isTaken(day)
+                let skipped = store.isSkipped(day)
+                let frozen = store.isFrozen(day)
+                VStack(spacing: 4) {
+                    Text(dayLabels[i])
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                    ZStack {
+                        Circle()
+                            .fill(fillColor(taken: taken, skipped: skipped, frozen: frozen))
+                            .frame(width: 30, height: 30)
+                        if taken {
+                            Image(systemName: "checkmark")
+                                .font(.caption2.bold())
+                                .foregroundStyle(.white)
+                        } else if skipped {
+                            Image(systemName: "pause.fill")
+                                .font(.caption2.bold())
+                                .foregroundStyle(.white)
+                        } else if frozen {
+                            Image(systemName: "snowflake")
+                                .font(.caption2.bold())
+                                .foregroundStyle(.white)
+                        }
+                        if daysBack == 0 {
                             Circle()
-                                .fill(fillColor(taken: taken, skipped: skipped, frozen: frozen))
-                                .frame(width: 30, height: 30)
-
-                            if taken {
-                                Image(systemName: "checkmark")
-                                    .font(.caption.bold())
-                                    .foregroundStyle(.white)
-                            } else if skipped {
-                                Image(systemName: "pause.fill")
-                                    .font(.caption.bold())
-                                    .foregroundStyle(.white)
-                            } else if frozen {
-                                Image(systemName: "snowflake")
-                                    .font(.caption.bold())
-                                    .foregroundStyle(.white)
-                            }
-
-                            if daysBack == 0 {
-                                Circle()
-                                    .stroke(Color.accentColor, lineWidth: 1.5)
-                                    .frame(width: 34, height: 34)
-                            }
+                                .strokeBorder(Color.accentColor, lineWidth: 1.5)
+                                .frame(width: 34, height: 34)
                         }
                     }
-                    .frame(maxWidth: .infinity)
                 }
+                .frame(maxWidth: .infinity)
             }
         }
-        .padding(14)
     }
 
     private func fillColor(taken: Bool, skipped: Bool, frozen: Bool) -> Color {
@@ -401,37 +443,143 @@ struct WeekOverview: View {
     }
 }
 
-// MARK: - Tip-of-the-Day (Glass-Card-Inhalt)
+// MARK: - Wasser-Hero (v13 — INLINE, big number + horizontal pill-row)
 
-struct TipCard: View {
-    let tip: String
+struct WasserHeroInline: View {
+    @Environment(WaterStore.self) private var water
+    @Environment(SoundsManager.self) private var sounds
+    @AppStorage("healthSyncEnabled") private var healthSyncEnabled = false
+
+    private var stepAmount: Int { water.quickAmounts.min() ?? 250 }
+
+    private func add(_ ml: Int) {
+        withAnimation { water.addToday(ml) }
+        sounds.playWaterSplash()
+        if healthSyncEnabled {
+            HealthKitManager.shared.syncTodayWater(totalML: water.todayAmount)
+        }
+    }
+
+    private func litersText(_ ml: Int) -> String {
+        let v = Double(ml) / 1000
+        let s = v.formatted(.number.precision(.fractionLength(0...2)))
+        return s.replacingOccurrences(of: ".", with: ",") + "L"
+    }
 
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
-            Image(systemName: "lightbulb.fill")
-                .foregroundStyle(.yellow)
-                .font(.title3)
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Tipp des Tages")
-                    .font(.caption.bold())
+        VStack(alignment: .leading, spacing: 14) {
+            HStack {
+                Label("Wasser", systemImage: "drop.fill")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.cyan)
+                Spacer()
+                Text("Ziel: \(litersText(water.dailyGoal))")
+                    .font(.caption.weight(.semibold))
                     .foregroundStyle(.secondary)
-                Text(tip)
-                    .font(.subheadline)
-                    .fixedSize(horizontal: false, vertical: true)
             }
-            Spacer(minLength: 0)
+
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                Text(litersText(water.todayAmount))
+                    .font(.system(size: 56, weight: .bold, design: .rounded))
+                    .foregroundStyle(.blue)
+                    .contentTransition(.numericText())
+                Text("von \(litersText(water.dailyGoal))")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                Spacer()
+            }
+
+            HStack(spacing: 8) {
+                Button { add(-stepAmount) } label: {
+                    Image(systemName: "minus")
+                        .font(.subheadline.weight(.semibold))
+                        .frame(width: 44, height: 44)
+                }
+                .buttonStyle(.bordered)
+                .clipShape(Circle())
+                .disabled(water.todayAmount == 0)
+
+                ForEach(water.quickAmounts, id: \.self) { amount in
+                    Button { add(amount) } label: {
+                        Text("+\(amount)")
+                            .font(.footnote.weight(.semibold))
+                            .frame(maxWidth: .infinity, minHeight: 44)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(.blue)
+                }
+            }
+
+            if water.goalReachedToday {
+                HStack(spacing: 6) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(.green)
+                    Text("Ziel erreicht")
+                        .font(.caption)
+                        .foregroundStyle(.green)
+                }
+            }
         }
-        .padding(14)
     }
 }
 
-// MARK: - Sheet zum Einstellen der Erinnerungszeit
+// MARK: - Recovery-Buddy (v13 — subtle airySection card)
+
+struct RecoveryBuddyInline: View {
+    @Environment(CreatineStore.self) private var store
+    var action: () -> Void = {}
+
+    private let motivationalQuotes = [
+        "Jeder Neustart ist ein neuer Anfang.",
+        "Die längste Reise beginnt mit einem einzigen Schritt.",
+        "Du warst schon über 7 Tage am Stück dran — das bleibt in dir.",
+        "Eine Pause ist kein Scheitern, sondern Atemholen.",
+        "Zurückkommen ist die stärkste Übung.",
+    ]
+
+    private var quote: String {
+        let burst = Calendar.current.ordinality(of: .day, in: .year, for: Date()) ?? 0
+        return motivationalQuotes[burst % motivationalQuotes.count]
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 10) {
+                Image(systemName: "heart.text.square.fill")
+                    .font(.title2)
+                    .foregroundStyle(.pink)
+                Text("Streak-Neustart willkommen")
+                    .font(.headline)
+            }
+            Text("Deine beste Streak war \(store.bestStreak) Tage.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+            Text(quote)
+                .font(.subheadline)
+                .foregroundStyle(.primary.opacity(0.85))
+                .fixedSize(horizontal: false, vertical: true)
+            Button {
+                Haptics.tapMedium()
+                action()
+            } label: {
+                Label("Heute Kreatin nehmen", systemImage: "checkmark.circle")
+                    .font(.body.weight(.semibold))
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 48)
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(.pink)
+        }
+        .airySection()
+    }
+}
+
+// MARK: - Reminder Time Sheet
 
 struct ReminderTimeSheet: View {
     @Binding var hour: Int
     @Binding var minute: Int
     var onSave: () -> Void
-
     @Environment(\.dismiss) private var dismiss
     @State private var selectedTime = Date()
 

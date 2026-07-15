@@ -88,7 +88,7 @@ struct BuddyView: View {
             .buttonStyle(.borderedProminent)
         }
         .padding()
-        .liquidGlassCard()
+        .airySection()
         .sheet(isPresented: $showStreakEditor) {
             BuddyStreakEditorSheet()
                 .presentationDetents([.height(280)])
