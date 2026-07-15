@@ -30,24 +30,32 @@ struct HistoryView: View {
                 DynamicBackground()
                 ScrollView {
                     VStack(alignment: .leading, spacing: 28) {
+                        // v14.5 DIAGNOSE: jeder Sub-Block durch debugSize() gewrappt.
+                        // In DEBUG: rot/grüner Border + Konsole-print der messung.
+                        // In RELEASE (Compiler-Strip): no-op wie vorher.
                         statGrid
+                            .debugSize("HistoryView.statGrid")
                         MoodHistoryChart()
+                            .debugSize("HistoryView.MoodHistoryChart")
                         StreakShareBanner()
+                            .debugSize("HistoryView.StreakShareBanner")
                         insightsSection
+                            .debugSize("HistoryView.insightsSection")
                         WaterHistoryChart()
+                            .debugSize("HistoryView.WaterHistoryChart")
                         CreatineHistoryChart()
+                            .debugSize("HistoryView.CreatineHistoryChart")
                         BuddyView()
+                            .debugSize("HistoryView.BuddyView")
                         MonthCalendar()
+                            .debugSize("HistoryView.MonthCalendar")
                         PhotoStreakSection()
+                            .debugSize("HistoryView.PhotoStreakSection")
                     }
                     .padding(.horizontal, 16)
                     .padding(.bottom, 32)
                     .frame(maxWidth: .infinity)
-                    // v14.4 KILLER-PRIMITIVE: `.fixedSize(horizontal: false)`
-                    // garantiert dass KEINE Sub-View den VStack breiter als den
-                    // Parent machen kann — selbst wenn ein Chart-Annotation-Block
-                    // oder Text-Layout überläuft, wird er auf Parent-Breite
-                    // geklemmt statt den Container zu verbreitern.
+                    // v14.4: primitive das Horizontal verbreitern blockt.
                     .fixedSize(horizontal: false, vertical: false)
                 }
                 // v14.3+14.4 DEFENSIVE: `.clipped()` clippt alles visuell
