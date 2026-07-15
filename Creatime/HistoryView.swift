@@ -389,6 +389,11 @@ struct MonthCalendar: View {
             }
         }
         .padding(14)
+        // v14.2: defensive .frame(maxWidth: .infinity) damit der
+        // Monats-Kalender-Gesamtblock NIE breiter wird als der
+        // ScrollView-Parent — auch falls ein zukünftiger Sub-Component
+        // mal überläuft.
+        .frame(maxWidth: .infinity)
         .background(Color(.systemBackground), in: RoundedRectangle(cornerRadius: 14))
     }
 
@@ -414,24 +419,26 @@ struct DayCell: View {
         let dayNumber = Calendar.current.component(.day, from: day)
 
         ZStack {
+            // v14.2: Innen-Circle adaptiv (maxWidth:.infinity +
+            // aspectRatio 1) statt fixed 30 — füllt die Zelle voll
+            // aus und clippt nicht mehr auf schmalen Phones.
             Circle()
                 .fill(fillColor(taken: taken, skipped: skipped, frozen: frozen))
-                .frame(width: 30, height: 30)
+                .padding(2)
             Text("\(dayNumber)")
                 .font(.callout)
                 .fontWeight(taken ? .bold : .regular)
                 .foregroundStyle(textColor(taken: taken, isFuture: isFuture))
-                .minimumScaleFactor(0.7)
+                .minimumScaleFactor(0.6)
                 .lineLimit(1)
+            // Auch der today-Border ist adaptiv (1pt Inset statt 34pt-radius).
             if isToday {
                 Circle()
                     .strokeBorder(Color.accentColor, lineWidth: 1.5)
-                    .frame(width: 34, height: 34)
+                    .padding(0)
             }
         }
-        // v14.1: fixed 38pt frame caused horizontal overflow on narrow
-        // phones — replaced with maxWidth:.infinity + aspectRatio 1 so
-        // the cell organically shrinks to fit its LazyVGrid column.
+        // v14.1: fixed 38pt frame entfernt — flex statt fixed.
         .frame(maxWidth: .infinity)
         .aspectRatio(1, contentMode: .fit)
         .opacity(isFuture ? 0.5 : 1)

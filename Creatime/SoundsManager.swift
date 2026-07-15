@@ -1,6 +1,7 @@
 import Foundation
 import SwiftUI
 import AudioToolbox
+import AVFoundation
 import UIKit
 
 // MARK: - Sound-Theme & Manager
@@ -13,15 +14,17 @@ import UIKit
 //   .calm:              nur leichte Haptics, keine Sounds
 //   .off:               nichts
 //
-// v2-Fix: `previewTheme(_:)` spielt nur den Sound ohne Haptik.
-// Grund: vorher rief SettingsView `playCreatineMark()` auf, das SOUND +
-// HAPTIC gleichzeitig feuerte — User nahmen das als "Sound ÜBER dem
-// ausgewählten" wahr, weil das Gehirn den Haptik-Impuls nicht klar
-// von der Audio-Welle trennen konnte.
-//
-// v3-Cleanup: ID-Tabelle ist in EINEM statischen Helper konzentriert.
-// `previewTheme` und `soundID(for:)` greifen beide auf dieselbe
-// Tabelle zu — keine duplizierten switch-Konstrukte mehr.
+// v14.2 (Bugfixes):
+//   • Haptics: SINGLETON-Generator retained + `.prepare()` beim init.
+//     Vor v14.2 wurde jedes Mal ein NEUER `UINotificationFeedbackGenerator`
+//     erzeugt — laut Apple-Doku kann der erste Trigger ohne `prepare()`
+//     fehlschlagen oder verzögert sein. Außerdem fliegt der State jedes
+//     Mal weg. Jetzt behalten wir eine Instanz, bereiten sie einmal vor
+//     und rufen `.prepare()` auch vor jedem Trigger erneut auf (das ist
+//     idempotent und reduziert Latency).
+//   • Audio: `AVAudioSession` Kategorie auf `.ambient` mit
+//     `.mixWithOthers` gesetzt — so spielen die System-Sounds auch
+//     im Silent-Mode ab und blockieren nicht andere Audio-Apps.
 
 enum SoundTheme: String, CaseIterable, Identifiable, Codable {
     case wellness, gym, calm, off
@@ -50,6 +53,11 @@ enum SoundTheme: String, CaseIterable, Identifiable, Codable {
 @Observable
 final class SoundsManager {
 
+    /// Singleton-retained Haptics-Generator (Apple-Doku: Generator MUSS
+    /// retained + `.prepare()`-ed werden, sonst erster Trigger
+    /// unzuverlässig). Wir instanziieren genau EINMAL pro SoundsManager.
+    private let notificationFeedback = UINotificationFeedbackGenerator()
+
     /// Eine Quelle der Wahrheit: dasselbe Standard-`UserDefaults`,
     /// das auch `@AppStorage("soundTheme")` benutzt.
     private let defaults: UserDefaults
@@ -71,6 +79,9 @@ final class SoundsManager {
         } else {
             self.theme = theme
         }
+        // Haptics vorbereiten + Audio-Session setzen.
+        notificationFeedback.prepare()
+        configureAudioSession()
     }
 
     /// Welcher Sound-/Haptik-Typ gespielt werden soll.
@@ -78,19 +89,17 @@ final class SoundsManager {
         case waterSplash, creatineMark, goalReached
     }
 
-    /// EINE Tabelle: (Theme × Action) → SystemSoundID. Wird sowohl von
-    /// `soundID(for:)` (aktives Theme) als auch von `previewTheme(_:)`
-    /// (Vorschau-Theme) genutzt — keine doppelten switch-Konstrukte.
+    /// EINE Tabelle: (Theme × Action) → SystemSoundID.
     private static func soundID(for theme: SoundTheme, action: Action) -> SystemSoundID? {
         switch (theme, action) {
-        case (.wellness, .waterSplash):  return 1108  // JBL_Tock — Wassertropfen
-        case (.wellness, .creatineMark): return 1104  // JBL_Confirm — soft
-        case (.wellness, .goalReached):  return 1023  // JBL_Begin — Bell
-        case (.gym,      .waterSplash):  return 1057  // Tweet — scharfkurzer Klick
-        case (.gym,      .creatineMark): return 1306  // Heavy Punch — fester Klick
-        case (.gym,      .goalReached):  return 1057  // Tweet — gleicher Punch wie Wasser
-        case (.calm,     .waterSplash):  return 1103  // JBL_No_match — sehr leise
-        case (.calm,     .creatineMark): return 1109  // JBL_Ambiguous — sanft
+        case (.wellness, .waterSplash):  return 1108  // JBL_Tock
+        case (.wellness, .creatineMark): return 1104  // JBL_Confirm
+        case (.wellness, .goalReached):  return 1023  // JBL_Begin (Bell)
+        case (.gym,      .waterSplash):  return 1057  // Tweet — scharfer Klick
+        case (.gym,      .creatineMark): return 1306  // Heavy Punch
+        case (.gym,      .goalReached):  return 1057  // Tweet
+        case (.calm,     .waterSplash):  return 1103  // JBL_No_match
+        case (.calm,     .creatineMark): return 1109  // JBL_Ambiguous
         case (.calm,     .goalReached):  return 1023  // Bell
         case (.off,      _):             return nil
         }
@@ -100,9 +109,8 @@ final class SoundsManager {
         Self.soundID(for: theme, action: action)
     }
 
-    // MARK: - Action-Methoden (für TodayView / WaterTrackerCard)
+    // MARK: - Action-Methoden
 
-    /// Splash-Sound bei Wasser-Tap. Nicht im `.off`-Theme.
     func playWaterSplash() {
         if let id = soundID(for: .waterSplash) {
             AudioServicesPlaySystemSound(id)
@@ -110,7 +118,6 @@ final class SoundsManager {
         trigger(theme == .gym ? .medium : .light)
     }
 
-    /// Click-Sound bei Kreatin-Bestätigung.
     func playCreatineMark() {
         if let id = soundID(for: .creatineMark) {
             AudioServicesPlaySystemSound(id)
@@ -118,12 +125,7 @@ final class SoundsManager {
         trigger(theme == .gym ? .heavy : .medium)
     }
 
-    /// Wasser-Ziel erreicht! v2: Chime-Cascade statt einsamer Bell.
-    ///
-    /// Vorher: einzelner 1023-Bell, den User als "Zug-Geräusch" empfanden.
-    /// Jetzt: kurzer Bell (1023) gefolgt von einem weichen Confirm-Ton
-    /// (1104) mit 140 ms Versatz → klingt wie ein kleines Feuerwerk und
-    /// ist klar VON anderen Sounds unterscheidbar.
+    /// Wasser-Ziel erreicht! Bell + Confirm-Cascade mit 140 ms Versatz.
     func playGoalReached() {
         if let bellID = soundID(for: .goalReached) {
             AudioServicesPlaySystemSound(bellID)
@@ -132,17 +134,11 @@ final class SoundsManager {
                 AudioServicesPlaySystemSound(1104)
             }
         }
-        UINotificationFeedbackGeneratorWrapper.success()
+        trigger(.heavy)
     }
 
-    // MARK: - Vorschau (für SettingsView)
+    // MARK: - Vorschau (Settings)
 
-    /// Pure-Audio-Preview eines Sound-Themes OHNE Haptik. Bewusst kein
-    /// `trigger(...)`, denn das gleichzeitige Sound+Haptik-Feuer wurde
-    /// von Usern als "Sound ÜBER dem ausgewählten" wahrgenommen.
-    ///
-    /// Nutzt die gleiche SoundID-Tabelle wie das aktive Theme —
-    /// kein doppelter Switch mehr.
     func previewTheme(_ preview: SoundTheme) {
         guard preview != .off else { return }
         if let id = Self.soundID(for: preview, action: .creatineMark) {
@@ -150,26 +146,44 @@ final class SoundsManager {
         }
     }
 
+    // MARK: - Haptics Helfer
+
     private func trigger(_ intensity: FeedbackIntensity) {
-        UINotificationFeedbackGeneratorWrapper.notify(intensity)
+        // Idempotent: vor jedem Trigger erneut `.prepare()` aufrufen,
+        // reduziert Trigger-Latency auf den nächsten Tap.
+        notificationFeedback.prepare()
+        switch intensity {
+        case .light:  notificationFeedback.notificationOccurred(.warning)
+        case .medium: notificationFeedback.notificationOccurred(.success)
+        case .heavy:  notificationFeedback.notificationOccurred(.error)
+        }
+    }
+
+    // MARK: - Audio-Session
+
+    /// `.ambient` = spielt im Silent-Mode weiter (kein aggressiver
+    /// Mix mit anderen Apps, duckt andere Audio-Quellen nicht ab).
+    /// `.mixWithOthers` = lässt z. B. Musik-Apps weiterlaufen, wenn
+    /// der User Creatime-Sounds hört.
+    private nonisolated func configureAudioSession() {
+        #if os(iOS)
+        do {
+            try AVAudioSession.sharedInstance().setCategory(
+                .ambient,
+                options: [.mixWithOthers]
+            )
+            try AVAudioSession.sharedInstance().setActive(true)
+        } catch {
+            // Wenn das scheitert (z. B. weil eine andere App die
+            // Session bereits hält), ist das nicht fatal — Sounds
+            // werden trotzdem über AudioServicesPlaySystemSound
+            // abgespielt, nur ohne unsere Mix-Policy.
+            print("SoundsManager: AVAudioSession setzen fehlgeschlagen: \(error)")
+        }
+        #endif
     }
 }
 
 private enum FeedbackIntensity {
     case light, medium, heavy
-}
-
-private enum UINotificationFeedbackGeneratorWrapper {
-    static func notify(_ intensity: FeedbackIntensity) {
-        let generator = UINotificationFeedbackGenerator()
-        switch intensity {
-        case .light: generator.notificationOccurred(.warning)
-        case .medium: generator.notificationOccurred(.success)
-        case .heavy: generator.notificationOccurred(.error)
-        }
-    }
-    static func success() {
-        let generator = UINotificationFeedbackGenerator()
-        generator.notificationOccurred(.success)
-    }
 }

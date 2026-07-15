@@ -12,9 +12,15 @@ struct ContentView: View {
     @AppStorage("reminderHour") private var reminderHour = 20
     @AppStorage("reminderMinute") private var reminderMinute = 0
     @AppStorage("remindersEnabled") private var remindersEnabled: Bool = true
+    @AppStorage("appearanceMode") private var appearanceModeRaw: String = AppearanceMode.system.rawValue
 
     // Merkt sich den zuletzt geöffneten Tab über App-Starts hinweg.
     @AppStorage("selectedTab") private var selectedTab = 0
+
+    /// v14.2 — explizite Hell/Dunkel/Auto-Auswahl. nil = dem System folgen.
+    private var preferredColorScheme: ColorScheme? {
+        AppearanceMode(rawValue: appearanceModeRaw)?.preferredColorSchemeOverride
+    }
 
     /// Zentrale Reschedule-Routine — wird in beiden scenePhase/tabSwitch-
     /// Handlern aufgerufen, damit Nag-Reminders beim App-Open ODER beim
@@ -110,6 +116,7 @@ struct ContentView: View {
                 }
             }
         }
+        .preferredColorScheme(preferredColorScheme)
     }
 }
 

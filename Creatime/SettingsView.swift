@@ -32,6 +32,9 @@ struct SettingsView: View {
     // durchgereicht.
     @AppStorage("remindersEnabled") private var remindersEnabled: Bool = true
 
+    // v14.2 — explizite Hell/Dunkel/Auto-Darstellung.
+    @AppStorage("appearanceMode") private var appearanceModeRaw: String = AppearanceMode.system.rawValue
+
     // Fallback-Zeit wenn die Smart-Reminder-Heuristik noch keine Daten
     // hat (z. B. neuer User). Wird auch beim manuellen „Jetzt neu planen"-
     // Button verwendet.
@@ -50,6 +53,9 @@ struct SettingsView: View {
 
                     // MARK: Kreatin-Erinnerung (NEU v14 — GANZ OBEN)
                     reminderCard
+
+                    // MARK: Darstellung (NEU v14.2)
+                    appearanceCard
 
                     // MARK: App-Icon (Info, nicht einstellbar)
                     SettingsCard(title: "App-Icon", systemImage: "app.badge.fill") {
@@ -388,6 +394,34 @@ struct SettingsView: View {
                     EmptyView()
                 }
             }
+        }
+    }
+
+    // MARK: - Appearance Card (NEU v14.2)
+
+    private var appearanceCard: some View {
+        SettingsCard(title: "Darstellung", systemImage: "circle.lefthalf.filled") {
+            VStack(alignment: .leading, spacing: 8) {
+                Picker("Modus", selection: $appearanceModeRaw) {
+                    ForEach(AppearanceMode.allCases) { mode in
+                        Label(mode.displayName, systemImage: mode.symbol).tag(mode.rawValue)
+                    }
+                }
+                .pickerStyle(.segmented)
+                Text(appearanceDescription)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
+    /// Menschen-lesbare Erklärung, was der aktuelle Modus macht.
+    private var appearanceDescription: String {
+        switch AppearanceMode(rawValue: appearanceModeRaw) ?? .system {
+        case .system: return "Folgt der Einstellung deines iPhones — tagsüber hell, abends dunkel."
+        case .light:  return "Immer helles Design, unabhängig von der Tageszeit oder iOS-Einstellung."
+        case .dark:   return "Immer dunkles Design, augenschonend bei wenig Umgebungslicht."
         }
     }
 
