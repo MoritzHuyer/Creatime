@@ -1,17 +1,20 @@
 import SwiftUI
 import UIKit
+import UserNotifications
 
 // Der SettingsSheet, geöffnet über den Gear-Button oben rechts in
-// TodayView und HistoryView. Inhalt:
-//   • App-Icon (jetzt nur noch Info-Karte — adaptive Icons laufen)
-//   • Theme (NEU in v3)
-//   • Sound-Thema
-//   • Smart-Reminder-Erkennung (NEU in v3)
-//   • Streak-Freeze-Info (NEU in v3)
-//   • Erinnerungen / Push-Permission
-//   • Urlaubsmodus
-//   • Hilfe
-//   • Footer mit Version & Credits
+// TodayView und HistoryView.
+//
+// v14 — Layout-Änderungen:
+//   • GANZ OBEN: neue „Kreatin-Erinnerung"-Card (umbenannt aus dem
+//     alten Block mittendrin). Diese Card vereint:
+//       - Toggle „Erinnerungen aktiv"
+//       - TimePicker für Erinnerungs-Zeit
+//       - Info zu Push-Berechtigung + anfragen
+//       - Info zu Nag-Reminders (3 Zufalls-Erinnerungen bis 22 Uhr
+//         wenn heute noch nicht bestätigt)
+//       - „Jetzt neu planen"
+//   • Die alte mittlere „Erinnerungen"-Card wurde ENTFERNT.
 
 struct SettingsView: View {
 
@@ -24,6 +27,11 @@ struct SettingsView: View {
 
     @AppStorage("soundTheme") private var soundThemeRaw: String = SoundTheme.wellness.rawValue
 
+    // Erinnerungs-Toggle (NEU v14). Default true. Wird an
+    // NotificationManager.rescheduleSmartReminders(... remindersEnabled)
+    // durchgereicht.
+    @AppStorage("remindersEnabled") private var remindersEnabled: Bool = true
+
     // Fallback-Zeit wenn die Smart-Reminder-Heuristik noch keine Daten
     // hat (z. B. neuer User). Wird auch beim manuellen „Jetzt neu planen"-
     // Button verwendet.
@@ -31,12 +39,17 @@ struct SettingsView: View {
     @AppStorage("reminderMinute") private var reminderMinute: Int = 0
 
     @State private var showVacationSheet = false
+    @State private var showReminderTimeSheet = false
     @State private var scheduledHours: [Int] = []
+    @State private var permissionStatus: UNAuthorizationStatus = .notDetermined
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 18) {
+
+                    // MARK: Kreatin-Erinnerung (NEU v14 — GANZ OBEN)
+                    reminderCard
 
                     // MARK: App-Icon (Info, nicht einstellbar)
                     SettingsCard(title: "App-Icon", systemImage: "app.badge.fill") {
@@ -59,7 +72,7 @@ struct SettingsView: View {
                         .padding(.vertical, 4)
                     }
 
-                    // MARK: Theme (NEU in v3)
+                    // MARK: Theme
                     SettingsCard(title: "Theme", systemImage: "paintbrush.fill") {
                         VStack(spacing: 8) {
                             ForEach(AppTheme.allCases) { theme in
@@ -67,7 +80,6 @@ struct SettingsView: View {
                                     themeManager.setTheme(theme)
                                 } label: {
                                     HStack {
-                                        // Vorschau-Swatch
                                         Circle()
                                             .fill(theme.primary)
                                             .frame(width: 22, height: 22)
@@ -100,7 +112,7 @@ struct SettingsView: View {
                         }
                     }
 
-                    // MARK: Smart-Reminder (NEU in v3)
+                    // MARK: Smart-Reminder
                     SettingsCard(title: "Smart-Reminder", systemImage: "bell.badge.fill") {
                         VStack(alignment: .leading, spacing: 8) {
                             HStack(spacing: 12) {
@@ -126,7 +138,7 @@ struct SettingsView: View {
                                 }
                                 Spacer(minLength: 0)
                             }
-                            if !scheduledHours.isEmpty {
+                            if !scheduledHours.isEmpty && remindersEnabled {
                                 Label(
                                     "Heute aktiv: " + scheduledHours.map(formatHour).joined(separator: " · "),
                                     systemImage: "clock.fill"
@@ -135,12 +147,7 @@ struct SettingsView: View {
                                 .foregroundStyle(.green)
                             }
                             Button {
-                                NotificationManager.rescheduleSmartReminders(
-                                    takenToday: store.takenToday,
-                                    suggestedHours: store.suggestedReminderHoursToday,
-                                    fallbackHour: reminderHour,
-                                    fallbackMinute: reminderMinute
-                                )
+                                reschedule()
                                 Task { await refreshScheduledHours() }
                             } label: {
                                 Label("Jetzt neu planen", systemImage: "arrow.triangle.2.circlepath")
@@ -150,7 +157,7 @@ struct SettingsView: View {
                         }
                     }
 
-                    // MARK: Wasser-Einheit (NEU in v7)
+                    // MARK: Wasser-Einheit
                     SettingsCard(title: "Wasser-Einheit", systemImage: "drop.fill") {
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Wähle, wie du dein Wasserziel ablesen möchtest.")
@@ -174,7 +181,7 @@ struct SettingsView: View {
                         }
                     }
 
-                    // MARK: Streak-Freeze (NEU in v3)
+                    // MARK: Streak-Freeze
                     SettingsCard(title: "Streak-Freeze", systemImage: "snowflake") {
                         HStack(spacing: 12) {
                             Image(systemName: "snowflake")
@@ -183,7 +190,7 @@ struct SettingsView: View {
                             VStack(alignment: .leading, spacing: 3) {
                                 Text("\(store.freezesRemainingThisMonth) von \(CreatineStore.freezeBudgetPerMonth) übrig")
                                     .font(.subheadline.bold())
-                                Text("Du kannst pro Monat bis zu \(CreatineStore.freezeBudgetPerMonth) Eis-Tage einlösen — die Streak bleibt erhalten, ohne dass es als \u{201E}Pause\u{201C} gewertet wird.")
+                                Text("Du kannst pro Monat bis zu \(CreatineStore.freezeBudgetPerMonth) Eis-Tage einlösen — die Streak bleibt erhalten, ohne dass es als Pause gewertet wird.")
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
                                     .fixedSize(horizontal: false, vertical: true)
@@ -225,19 +232,6 @@ struct SettingsView: View {
                         }
                     }
 
-                    // MARK: Erinnerungen
-                    SettingsCard(title: "Erinnerungen", systemImage: "bell.fill") {
-                        Button {
-                            NotificationManager.requestPermission()
-                        } label: {
-                            Label("Push-Berechtigung anfragen", systemImage: "bell.badge")
-                        }
-                        .buttonStyle(.bordered)
-                        Text("Creatime kann dich täglich erinnern, falls du noch nicht bestätigt hast.")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-
                     // MARK: Urlaubsmodus
                     SettingsCard(title: "Urlaubsmodus", systemImage: "palm.tree.fill") {
                         HStack {
@@ -261,7 +255,7 @@ struct SettingsView: View {
                         }
                     }
 
-                    // MARK: Hilfe-Sektion
+                    // MARK: Hilfe
                     SettingsCard(title: "Hilfe", systemImage: "lightbulb.fill") {
                         Text("Sprache: Deutsch. Englische Übersetzung folgt — wenn du helfen willst, sag Bescheid.")
                             .font(.caption)
@@ -296,12 +290,121 @@ struct SettingsView: View {
                 .presentationDetents([.medium, .large])
                 .liquidGlassSheet()
         }
+        .sheet(isPresented: $showReminderTimeSheet) {
+            ReminderTimeEditSheet(
+                hour: $reminderHour,
+                minute: $reminderMinute,
+                onSave: {
+                    reschedule()
+                    Task { await refreshScheduledHours() }
+                }
+            )
+            .presentationDetents([.height(280)])
+        }
         .task {
+            permissionStatus = await NotificationManager.currentAuthorizationStatus()
             await refreshScheduledHours()
         }
     }
 
-    /// Liest aktuell geplante Reminder-Stunden aus dem Notification-Center.
+    // MARK: - Reminder Card (NEU v14 — GANZ OBEN)
+
+    private var reminderCard: some View {
+        SettingsCard(title: "Kreatin-Erinnerung", systemImage: "bell.fill") {
+            VStack(alignment: .leading, spacing: 12) {
+
+                // Toggle: Erinnerungen aktiv
+                Toggle(isOn: $remindersEnabled) {
+                    Label("Erinnerungen aktiv", systemImage: "bell.fill")
+                        .font(.subheadline.weight(.semibold))
+                }
+                .onChange(of: remindersEnabled) { _, _ in
+                    reschedule()
+                    Task { await refreshScheduledHours() }
+                }
+
+                if remindersEnabled {
+                    // Erinnerungs-Zeit (Picker im Capsule-Style)
+                    Button {
+                        showReminderTimeSheet = true
+                    } label: {
+                        HStack {
+                            Label("Uhrzeit", systemImage: "clock.fill")
+                                .font(.subheadline)
+                            Spacer()
+                            Text(formatReminderTime(reminderHour, reminderMinute))
+                                .font(.subheadline.weight(.bold))
+                                .monospacedDigit()
+                                .foregroundStyle(Color.accentColor)
+                            Image(systemName: "chevron.right")
+                                .font(.caption2)
+                                .foregroundStyle(.tertiary)
+                        }
+                        .foregroundStyle(.primary)
+                        .padding(.vertical, 8)
+                        .padding(.horizontal, 12)
+                        .background(Color(.tertiarySystemFill),
+                                    in: RoundedRectangle(cornerRadius: 10))
+                    }
+                    .buttonStyle(.plain)
+
+                    // Nag-Reminder-Info
+                    HStack(alignment: .top, spacing: 8) {
+                        Image(systemName: "bell.badge.fill")
+                            .font(.caption)
+                            .foregroundStyle(.orange)
+                            .padding(.top, 1)
+                        Text("Hast du bis \(formatReminderTime(reminderHour, reminderMinute)) noch nicht bestätigt, senden wir dir bis 22 Uhr zusätzliche zufällige Erinnerungen — bis du dein Kreatin nimmst.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+
+                // Push-Berechtigung
+                switch permissionStatus {
+                case .denied:
+                    HStack(alignment: .top, spacing: 8) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundStyle(.orange)
+                        Text("Push-Berechtigung abgelehnt — aktiviere sie in den iOS-Einstellungen, damit wir dich erinnern dürfen.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                case .notDetermined:
+                    Button {
+                        NotificationManager.requestPermission()
+                        Task {
+                            try? await Task.sleep(for: .milliseconds(600))
+                            permissionStatus = await NotificationManager.currentAuthorizationStatus()
+                        }
+                    } label: {
+                        Label("Push-Berechtigung anfragen", systemImage: "bell.badge")
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                default:
+                    EmptyView()
+                }
+            }
+        }
+    }
+
+    // MARK: - Helpers
+
+    /// Re-planned alle Notifications unter Berücksichtigung des
+    /// remindersEnabled-Toggles.
+    private func reschedule() {
+        NotificationManager.rescheduleSmartReminders(
+            takenToday: store.takenToday,
+            suggestedHours: store.suggestedReminderHoursToday,
+            fallbackHour: reminderHour,
+            fallbackMinute: reminderMinute,
+            remindersEnabled: remindersEnabled
+        )
+    }
+
     private func refreshScheduledHours() async {
         scheduledHours = await NotificationManager.getScheduledReminderHours()
     }
@@ -311,15 +414,16 @@ struct SettingsView: View {
         String(format: "%02d:00 Uhr", h)
     }
 
-    /// Formatierter Wert passend zur aktuellen Wasser-Einheit (z. B.
-    /// „3.5" für „3,5 Gläser"). Eine Nachkommastelle reicht hier.
+    /// HH:MM (z. B. „16:30").
+    private func formatReminderTime(_ h: Int, _ m: Int) -> String {
+        String(format: "%02d:%02d", h, m)
+    }
+
     private func formatValue(_ value: Double) -> String {
         value.formatted(.number.precision(.fractionLength(0...1)))
             .replacingOccurrences(of: ".", with: ",")
     }
 
-    /// Binding-Helfer für den GoalMode-Picker: liest aus dem Store,
-    /// schreibt zurück in den Store bei Auswahl.
     private var waterGoalModeBinding: Binding<WaterStore.GoalMode> {
         Binding(
             get: { water.goalMode },
@@ -327,7 +431,6 @@ struct SettingsView: View {
         )
     }
 
-    /// Symbolischer Beiname für die ThemePicker-Reihen.
     private func symbolicName(_ theme: AppTheme) -> String {
         switch theme {
         case .indigo:  return "Tiefer Indigo-Sweep"
@@ -335,6 +438,47 @@ struct SettingsView: View {
         case .magenta: return "Pulsierendes Magenta"
         case .sunset:  return "Warmer Sonnenuntergang"
         case .ocean:   return "Kühler Ozean-Strom"
+        }
+    }
+}
+
+// MARK: - ReminderTimeEditSheet (NEU v14 — wandert aus TodayView hierher)
+
+private struct ReminderTimeEditSheet: View {
+    @Binding var hour: Int
+    @Binding var minute: Int
+    var onSave: () -> Void
+    @Environment(\.dismiss) private var dismiss
+    @State private var selectedTime = Date()
+
+    var body: some View {
+        VStack(spacing: 16) {
+            Text("Wann sollen wir dich erinnern?")
+                .font(.headline)
+                .padding(.top, 24)
+
+            DatePicker(
+                "Uhrzeit",
+                selection: $selectedTime,
+                displayedComponents: .hourAndMinute
+            )
+            .datePickerStyle(.wheel)
+            .labelsHidden()
+
+            Button("Speichern") {
+                let comps = Calendar.current.dateComponents([.hour, .minute], from: selectedTime)
+                hour = comps.hour ?? 20
+                minute = comps.minute ?? 0
+                onSave()
+                dismiss()
+            }
+            .buttonStyle(.borderedProminent)
+        }
+        .padding()
+        .onAppear {
+            selectedTime = Calendar.current.date(
+                bySettingHour: hour, minute: minute, second: 0, of: Date()
+            ) ?? Date()
         }
     }
 }

@@ -1,23 +1,29 @@
 import SwiftUI
 import UIKit
 
-// MARK: - Heute-Tab (v13 — Airy / inline)
+// MARK: - Heute-Tab (v14 — Compact Hero + Big CTA + Progress Bar)
 //
-// Layout-Philosophie: freier Weißraum statt Card-Chrome. Jeder Bereich
-// atmet für sich, Glass nur noch in der RecoveryBuddy-Ausnahme
-// (wenn Streak gebrochen und Best-Streak >= 7).
+// Layout-Philosophie (unverändert): freier Weißraum statt Card-Chrome.
+// v14-Änderungen ggü. v13:
+//   • Mood-Sektion ENTFERNT — wird nicht mehr auf der Home angezeigt
+//     (Mood-Daten bleiben im Store; Logging/Visualisierung im HistoryTab).
+//   • Streak-Hero COMPACT (🔥 + Zahl + Caption in einer Zeile).
+//   • Hauptaktion = prominenter BIG CTA (56 pt, state-aware).
+//   • Wasser-Hero hat jetzt eine sichtbare Progress-Bar mit
+//     Gradient-Tint, das nach Roh-Verhältnis Farben shiftet
+//     (orange → cyan → blue → green bei Überschreiten des Ziels).
+//   • Reminder-Footer-Chip unten ENTFERNT — Umzug in die Settings
+//     (ganz oben, neuer „Kreatin-Erinnerung"-Block).
 //
 // Reihenfolge (8 Sections, 28pt Spacing zwischen):
 //   1. Vacation-Banner (subtle Pill, conditional)
-//   2. Streak-Hero (🔥 + 64pt + "Tage in Folge" — INLINE)
-//   3. Mood-Emoji-Reihe (5 Emojis + Labels — INLINE)
-//   4. Wochenübersicht (T F S S M D M + 7 Kreise — INLINE)
-//   5. "Heute erledigt / Jetzt markieren" kleine Text-Button (NICHT 60pt!)
-//   6. Wasser-Hero ("1,8 Liter" + horizontaler Pill-Row — INLINE)
-//   7. Pause/Freeze Menu (subtle Capsule, conditional)
-//   8. Recovery-Buddy (subtle Card, conditional, nur wenn Streak gebrochen)
-//   9. Tip-of-the-Day (GELBER STRIP statt Glass-Card)
-//  10. Reminder-Footer-Chip mit Glocken-Icon
+//   2. Streak-Hero — COMPACT horizontal (🔥 + Zahl + Caption)
+//   3. Wochenübersicht (T F S S M D M + 7 Kreise — inline)
+//   4. Hauptaktion als BIG primary CTA (56pt, prominent, state-aware)
+//   5. Wasser-Hero mit Gradient-ProgressBar
+//   6. Pause/Freeze Menu (subtle Capsule, conditional)
+//   7. Recovery-Buddy (subtle airy Section, conditional)
+//   8. Tip-of-the-Day (GELBER STRIP, kein Glass)
 
 struct TodayView: View {
     @Environment(CreatineStore.self) private var store
@@ -27,15 +33,10 @@ struct TodayView: View {
     @AppStorage("reminderHour") private var reminderHour = 20
     @AppStorage("reminderMinute") private var reminderMinute = 0
 
-    @State private var showTimeSheet = false
     @State private var showVacationSheet = false
     @State private var showSettings = false
     @State private var confettiTrigger = false
     @State private var confettiOnboardingTrigger = false
-
-    private var reminderTimeText: String {
-        String(format: "%02d:%02d", reminderHour, reminderMinute)
-    }
 
     private var dailyTip: String {
         let dayOfYear = Calendar.current.ordinality(of: .day, in: .year, for: Date()) ?? 0
@@ -49,16 +50,6 @@ struct TodayView: View {
         "Trink genügend Wasser — Kreatin zieht Wasser in die Muskelzellen.",
         "Verbinde Kreatin mit einer festen Routine, z. B. direkt zum Frühstück.",
     ]
-
-    private let moods: [(emoji: String, label: String, key: String)] = [
-        ("😐", "Schlecht", "neutral"),
-        ("😊", "OK",       "good"),
-        ("🤩", "Gut",      "great"),
-        ("🥵", "Stress",   "stressed"),
-        ("😴", "Erledigt", "tired"),
-    ]
-
-    private var selectedMood: String? { store.moodByDay[DayKey.today] }
 
     private var shouldShowRecovery: Bool {
         store.bestStreak >= 7 &&
@@ -81,34 +72,17 @@ struct TodayView: View {
                                 .transition(.move(edge: .top).combined(with: .opacity))
                         }
 
-                        // 1. Streak-Hero
                         streakHero
-
-                        // 2. Mood-Emojis
-                        moodSection
-
-                        // 3. Week overview
                         WeekOverviewInline()
-
-                        // 4. Hauptaktion (small button)
-                        hauptaktionRow
-
-                        // 5. Wasser-Hero
+                        primaryCTA
                         WasserHeroInline()
-
-                        // 6. Pause/Freeze menu
                         pauseControl
 
-                        // 7. RecoveryBuddy (conditional, subtle)
                         if shouldShowRecovery {
                             RecoveryBuddyInline(action: markAsTaken)
                         }
 
-                        // 8. Tip-of-the-Day (yellow strip)
                         tipStrip
-
-                        // 9. Reminder-Footer
-                        reminderFooter
                     }
                     .padding(.horizontal, 16)
                     .padding(.bottom, 32)
@@ -142,14 +116,6 @@ struct TodayView: View {
                 Task { await pushLiveActivityUpdate() }
             }
         }
-        .sheet(isPresented: $showTimeSheet) {
-            ReminderTimeSheet(
-                hour: $reminderHour,
-                minute: $reminderMinute,
-                onSave: rescheduleNotifications
-            )
-            .presentationDetents([.height(280)])
-        }
         .sheet(isPresented: $showVacationSheet) {
             VacationModeSheet()
                 .presentationDetents([.medium, .large])
@@ -157,88 +123,84 @@ struct TodayView: View {
         .sheet(isPresented: $showSettings) { SettingsView() }
     }
 
-    // MARK: - Inline Sections
+    // MARK: - Streak Hero (compact, horizontal)
 
     private var streakHero: some View {
-        VStack(spacing: 8) {
+        HStack(spacing: 12) {
             Text("🔥")
-                .font(.system(size: 48))
-            Text("\(store.currentStreak)")
-                .font(.system(size: 64, weight: .bold, design: .rounded))
-                .contentTransition(.numericText())
-                .monospacedDigit()
-                .foregroundStyle(.primary)
-            Text("Tage in Folge")
-                .font(.subheadline.weight(.medium))
-                .foregroundStyle(.secondary)
+                .font(.system(size: 32))
+            VStack(alignment: .leading, spacing: 0) {
+                Text("\(store.currentStreak)")
+                    .font(.system(size: 44, weight: .bold, design: .rounded))
+                    .monospacedDigit()
+                    .contentTransition(.numericText())
+                    .foregroundStyle(.primary)
+                Text("Tage in Folge")
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+            if store.bestStreak > store.currentStreak && store.bestStreak > 0 {
+                HStack(spacing: 4) {
+                    Image(systemName: "crown.fill")
+                        .font(.caption2)
+                        .foregroundStyle(.yellow)
+                    Text("Beste: \(store.bestStreak)")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(Color.yellow.opacity(0.12), in: Capsule())
+            }
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 12)
+        .padding(.vertical, 4)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(store.currentStreak) Tage Streak in Folge")
     }
 
-    private var moodSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("Wie fühlst du dich heute?")
-                .font(.subheadline.bold())
-                .foregroundStyle(.secondary)
-            HStack(spacing: 6) {
-                ForEach(moods, id: \.key) { mood in
-                    Button {
-                        Haptics.tap()
-                        store.setMoodToday(mood.key)
-                    } label: {
-                        VStack(spacing: 4) {
-                            Text(mood.emoji)
-                                .font(.system(size: 32))
-                                .frame(width: 50, height: 50)
-                                .background(
-                                    Circle()
-                                        .fill(selectedMood == mood.key
-                                              ? Color.cyan.opacity(0.20)
-                                              : Color.clear)
-                                )
-                            Text(mood.label)
-                                .font(.caption2)
-                                .foregroundStyle(selectedMood == mood.key ? .primary : .secondary)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .scaleEffect(selectedMood == mood.key ? 1.05 : 1.0)
-                        .animation(.snappy, value: selectedMood)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("\(mood.label), Stimmung")
-                }
+    // MARK: - Primary CTA (BIG, prominent, state-aware)
+
+    private var primaryCTA: some View {
+        Button(action: markAsTaken) {
+            HStack(spacing: 10) {
+                Image(systemName: ctaIcon)
+                    .font(.title3)
+                Text(ctaTitle)
+                    .font(.body.weight(.bold))
             }
+            .frame(maxWidth: .infinity, minHeight: 56)
         }
+        .buttonStyle(.borderedProminent)
+        .controlSize(.large)
+        .tint(ctaTint)
+        .disabled(store.takenToday || store.skippedToday || store.frozenToday)
+        .accessibilityLabel("Kreatin-Tagesstatus: \(ctaTitle)")
     }
 
-    private var hauptaktionRow: some View {
-        HStack(spacing: 12) {
-            Image(systemName: store.takenToday
-                  ? "checkmark.circle.fill"
-                  : (store.skippedToday ? "pause.circle.fill" : "circle"))
-                .foregroundStyle(store.takenToday ? .green
-                                 : (store.skippedToday ? .orange : .secondary))
-                .font(.title3)
-            Text(store.takenToday
-                 ? "Heute erledigt"
-                 : (store.skippedToday ? "Heute pausiert" : "Heute offen"))
-                .font(.body.weight(.semibold))
-                .foregroundStyle(.secondary)
-            Spacer()
-            if !store.takenToday && !store.skippedToday {
-                Button(action: markAsTaken) {
-                    Label("Jetzt markieren", systemImage: "checkmark.circle")
-                        .font(.subheadline.weight(.semibold))
-                }
-                .buttonStyle(.borderedProminent)
-                .tint(.accentColor)
-            }
-        }
-        .padding(.horizontal, 4)
+    private var ctaIcon: String {
+        if store.takenToday   { return "checkmark.circle.fill" }
+        if store.skippedToday { return "pause.circle.fill" }
+        if store.frozenToday  { return "snowflake" }
+        return "pills.fill"
     }
+
+    private var ctaTitle: String {
+        if store.takenToday   { return "Heute erledigt" }
+        if store.skippedToday { return "Heute pausiert" }
+        if store.frozenToday  { return "Heute gefroren" }
+        return "Jetzt Kreatin markieren"
+    }
+
+    private var ctaTint: Color {
+        if store.takenToday   { return .green }
+        if store.skippedToday { return .orange }
+        if store.frozenToday  { return .cyan }
+        return .accentColor
+    }
+
+    // MARK: - Tip Strip
 
     private var tipStrip: some View {
         HStack(alignment: .top, spacing: 12) {
@@ -260,22 +222,7 @@ struct TodayView: View {
                     in: RoundedRectangle(cornerRadius: 14))
     }
 
-    private var reminderFooter: some View {
-        Button { showTimeSheet = true } label: {
-            HStack(spacing: 6) {
-                Image(systemName: "bell.fill")
-                    .font(.caption2)
-                Text("Erinnerung um \(reminderTimeText) Uhr")
-                    .font(.caption)
-            }
-            .foregroundStyle(.secondary)
-            .padding(.horizontal, 14)
-            .padding(.vertical, 8)
-            .background(Color(.tertiarySystemFill), in: Capsule())
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel("Erinnerungszeit ändern, aktuell \(reminderTimeText) Uhr")
-    }
+    // MARK: - Pause / Freeze Control
 
     @ViewBuilder
     private var pauseControl: some View {
@@ -443,7 +390,7 @@ struct WeekOverviewInline: View {
     }
 }
 
-// MARK: - Wasser-Hero (v13 — INLINE, big number + horizontal pill-row)
+// MARK: - Wasser-Hero (v14 — INLINE mit Gradient ProgressBar)
 
 struct WasserHeroInline: View {
     @Environment(WaterStore.self) private var water
@@ -466,6 +413,27 @@ struct WasserHeroInline: View {
         return s.replacingOccurrences(of: ".", with: ",") + "L"
     }
 
+    /// Roh-Verhältnis 0.0…N (nicht capped) — damit wir den Balken visuell
+    /// auf 100% deckeln, aber den Tint trotzdem auf GREEN umschalten,
+    /// sobald das Ziel überschritten ist.
+    private var rawRatio: Double {
+        guard water.dailyGoal > 0 else { return 0 }
+        return Double(water.todayAmount) / Double(water.dailyGoal)
+    }
+
+    /// Tint-Farbe für Bar UND Big-Number. Shiftet mit raw ratio:
+    ///   < 0.25 → orange (fast nichts getrunken)
+    ///   0.25…0.75 → cyan (im Plan)
+    ///   0.75…1.0 → blue (kurz vor Ziel)
+    ///   ≥ 1.0 → green (Ziel erreicht / überschritten)
+    private var progressTint: Color {
+        let p = rawRatio
+        if p >= 1.0 { return .green }
+        if p >= 0.75 { return .blue }
+        if p >= 0.25 { return .cyan }
+        return .orange
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
@@ -481,13 +449,16 @@ struct WasserHeroInline: View {
             HStack(alignment: .firstTextBaseline, spacing: 6) {
                 Text(litersText(water.todayAmount))
                     .font(.system(size: 56, weight: .bold, design: .rounded))
-                    .foregroundStyle(.blue)
+                    .foregroundStyle(progressTint)
                     .contentTransition(.numericText())
                 Text("von \(litersText(water.dailyGoal))")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                 Spacer()
             }
+
+            // NEU v14 — Gradient ProgressBar
+            WasserProgressBar(progress: min(1.0, rawRatio), tint: progressTint)
 
             HStack(spacing: 8) {
                 Button { add(-stepAmount) } label: {
@@ -510,16 +481,54 @@ struct WasserHeroInline: View {
                 }
             }
 
-            if water.goalReachedToday {
-                HStack(spacing: 6) {
+            HStack(spacing: 6) {
+                if water.goalReachedToday {
                     Image(systemName: "checkmark.circle.fill")
                         .foregroundStyle(.green)
-                    Text("Ziel erreicht")
-                        .font(.caption)
+                    Text(rawRatio > 1.05
+                         ? "Ziel erreicht · \(litersText(water.todayAmount - water.dailyGoal)) über Ziel"
+                         : "Ziel erreicht")
+                        .font(.caption.weight(.semibold))
                         .foregroundStyle(.green)
+                } else {
+                    let remaining = max(0, water.dailyGoal - water.todayAmount)
+                    Text("Noch \(litersText(remaining)) bis zum Ziel")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
+                Spacer()
             }
         }
+    }
+}
+
+// MARK: - Wasser ProgressBar (v14 — eigenständige Sub-Component)
+
+/// Capsule-förmige Progress-Bar mit Horizontal-Linear-Gradient.
+/// Breite ist `progress` (0–1, gecapped), Tint-Farbe ist extern gesteuert
+/// (kommt aus `WasserHeroInline.progressTint`).
+struct WasserProgressBar: View {
+    let progress: Double
+    let tint: Color
+
+    var body: some View {
+        GeometryReader { geo in
+            ZStack(alignment: .leading) {
+                Capsule()
+                    .fill(Color(.tertiarySystemFill))
+                Capsule()
+                    .fill(
+                        LinearGradient(
+                            colors: [tint.opacity(0.55), tint],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
+                    .frame(width: max(8, geo.size.width * CGFloat(progress)))
+            }
+        }
+        .frame(height: 12)
+        .animation(.snappy, value: progress)
     }
 }
 
@@ -571,47 +580,6 @@ struct RecoveryBuddyInline: View {
             .tint(.pink)
         }
         .airySection()
-    }
-}
-
-// MARK: - Reminder Time Sheet
-
-struct ReminderTimeSheet: View {
-    @Binding var hour: Int
-    @Binding var minute: Int
-    var onSave: () -> Void
-    @Environment(\.dismiss) private var dismiss
-    @State private var selectedTime = Date()
-
-    var body: some View {
-        VStack(spacing: 16) {
-            Text("Wann sollen wir dich erinnern?")
-                .font(.headline)
-                .padding(.top, 24)
-
-            DatePicker(
-                "Uhrzeit",
-                selection: $selectedTime,
-                displayedComponents: .hourAndMinute
-            )
-            .datePickerStyle(.wheel)
-            .labelsHidden()
-
-            Button("Speichern") {
-                let comps = Calendar.current.dateComponents([.hour, .minute], from: selectedTime)
-                hour = comps.hour ?? 20
-                minute = comps.minute ?? 0
-                onSave()
-                dismiss()
-            }
-            .buttonStyle(.borderedProminent)
-        }
-        .padding()
-        .onAppear {
-            selectedTime = Calendar.current.date(
-                bySettingHour: hour, minute: minute, second: 0, of: Date()
-            ) ?? Date()
-        }
     }
 }
 

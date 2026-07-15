@@ -11,9 +11,25 @@ struct ContentView: View {
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
     @AppStorage("reminderHour") private var reminderHour = 20
     @AppStorage("reminderMinute") private var reminderMinute = 0
+    @AppStorage("remindersEnabled") private var remindersEnabled: Bool = true
 
     // Merkt sich den zuletzt geöffneten Tab über App-Starts hinweg.
     @AppStorage("selectedTab") private var selectedTab = 0
+
+    /// Zentrale Reschedule-Routine — wird in beiden scenePhase/tabSwitch-
+    /// Handlern aufgerufen, damit Nag-Reminders beim App-Open ODER beim
+    /// Tab-Wechsel auf „Heute" neu geplant werden (wenn der Tag noch
+    /// offen ist).
+    private func rescheduleAllReminders() {
+        store.reload()
+        NotificationManager.rescheduleSmartReminders(
+            takenToday: store.takenToday,
+            suggestedHours: store.suggestedReminderHoursToday,
+            fallbackHour: reminderHour,
+            fallbackMinute: reminderMinute,
+            remindersEnabled: remindersEnabled
+        )
+    }
 
     var body: some View {
         Group {
@@ -48,13 +64,7 @@ struct ContentView: View {
         }
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .active && selectedTab == 0 {
-                store.reload()
-                NotificationManager.rescheduleSmartReminders(
-                    takenToday: store.takenToday,
-                    suggestedHours: store.suggestedReminderHoursToday,
-                    fallbackHour: reminderHour,
-                    fallbackMinute: reminderMinute
-                )
+                rescheduleAllReminders()
                 // Erst-Tag-Special-Case: Wenn die App ihren aller-
                 // ersten Tag nach abgeschlossenem Onboarding sieht → wird
                 // eine Achievement-Stufe (days: 0 / Onboarding-Starter)
@@ -81,6 +91,12 @@ struct ContentView: View {
             }
         }
         .onChange(of: selectedTab) { _, newTab in
+            // Wenn der User auf den Heute-Tab wechselt UND es noch
+            // Nag-Slots in der Zukunft gibt, neu planen (= weiter
+            // „angepingt" werden, bis er das Kreatin markiert).
+            if newTab == 0 {
+                rescheduleAllReminders()
+            }
             Task { @MainActor in
                 if newTab == 0 {
                     await LiveActivityManager.shared.startOrUpdate(
