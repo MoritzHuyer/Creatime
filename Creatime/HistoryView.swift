@@ -301,6 +301,8 @@ struct StreakShareBanner: View {
                     Text("Dein \(store.currentStreak)-Tage-Streak im Bild verschicken.")
                         .font(.caption2)
                         .foregroundStyle(.white.opacity(0.85))
+                        .lineLimit(2)
+                        .minimumScaleFactor(0.85)
                 }
                 Spacer()
                 Image(systemName: "chevron.right")
@@ -414,18 +416,24 @@ struct DayCell: View {
         ZStack {
             Circle()
                 .fill(fillColor(taken: taken, skipped: skipped, frozen: frozen))
-                .frame(width: 32, height: 32)
+                .frame(width: 30, height: 30)
             Text("\(dayNumber)")
                 .font(.callout)
                 .fontWeight(taken ? .bold : .regular)
                 .foregroundStyle(textColor(taken: taken, isFuture: isFuture))
+                .minimumScaleFactor(0.7)
+                .lineLimit(1)
             if isToday {
                 Circle()
                     .strokeBorder(Color.accentColor, lineWidth: 1.5)
-                    .frame(width: 36, height: 36)
+                    .frame(width: 34, height: 34)
             }
         }
-        .frame(width: 38, height: 38)
+        // v14.1: fixed 38pt frame caused horizontal overflow on narrow
+        // phones — replaced with maxWidth:.infinity + aspectRatio 1 so
+        // the cell organically shrinks to fit its LazyVGrid column.
+        .frame(maxWidth: .infinity)
+        .aspectRatio(1, contentMode: .fit)
         .opacity(isFuture ? 0.5 : 1)
     }
 

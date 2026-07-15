@@ -174,7 +174,11 @@ private struct PhotoThumb: View {
                         )
                 }
             }
-            .frame(width: 100, height: 100)
+            // v14.1: fixed 100×100 frame caused horizontal overflow on
+            // narrow phones; replaced with maxWidth:.infinity + aspectRatio
+            // 1 so thumbnails scale to fit each LazyVGrid column.
+            .frame(maxWidth: .infinity)
+            .aspectRatio(1, contentMode: .fill)
             .clipShape(RoundedRectangle(cornerRadius: 12))
             .overlay {
                 RoundedRectangle(cornerRadius: 12)
