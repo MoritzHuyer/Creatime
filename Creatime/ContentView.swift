@@ -1,8 +1,19 @@
 import SwiftUI
 
-// Die Wurzel der App. Sie entscheidet als Erstes:
-// Onboarding schon erledigt? Wenn nein → Willkommens-Seiten zeigen.
-// Wenn ja → die normale App mit Tab-Leiste.
+// MARK: - ContentView (v16 — Claude Design Port)
+//
+// Wurzelschicht der App: entscheidet zuerst Onboarding vs. Hauptansicht
+// und hostet jetzt eine schwebende Glass-Pill-Tab-Bar (FloatingTabBar)
+// statt des nativen SwiftUI-TabItem-Bars.
+//
+// Preserve verbatim from v15:
+//   • @AppStorage keys (hasCompletedOnboarding, selectedTab, all
+//     reminder / appearance / sound keys)
+//   • scenePhase-Handler (live-activity start/end on active/background)
+//   • selectedTab.onChange-Handler (reschedule auf Heute-Tab + LA update)
+//   • rescheduleAllReminders identity
+//   • preferredColorScheme hookup
+
 struct ContentView: View {
     @Environment(CreatineStore.self) private var store
     @Environment(WaterStore.self) private var waterStore
@@ -13,19 +24,12 @@ struct ContentView: View {
     @AppStorage("reminderMinute") private var reminderMinute = 0
     @AppStorage("remindersEnabled") private var remindersEnabled: Bool = true
     @AppStorage("appearanceMode") private var appearanceModeRaw: String = AppearanceMode.system.rawValue
-
-    // Merkt sich den zuletzt geöffneten Tab über App-Starts hinweg.
     @AppStorage("selectedTab") private var selectedTab = 0
 
-    /// v14.2 — explizite Hell/Dunkel/Auto-Auswahl. nil = dem System folgen.
     private var preferredColorScheme: ColorScheme? {
         AppearanceMode(rawValue: appearanceModeRaw)?.preferredColorSchemeOverride
     }
 
-    /// Zentrale Reschedule-Routine — wird in beiden scenePhase/tabSwitch-
-    /// Handlern aufgerufen, damit Nag-Reminders beim App-Open ODER beim
-    /// Tab-Wechsel auf „Heute" neu geplant werden (wenn der Tag noch
-    /// offen ist).
     private func rescheduleAllReminders() {
         store.reload()
         NotificationManager.rescheduleSmartReminders(
@@ -39,44 +43,48 @@ struct ContentView: View {
 
     var body: some View {
         Group {
-            if hasCompletedOnboarding {
-                mainApp
-            } else {
-                OnboardingView()
-            }
+            if hasCompletedOnboarding { mainApp }
+            else { OnboardingView() }
         }
         .animation(.default, value: hasCompletedOnboarding)
     }
 
     private var mainApp: some View {
-        TabView(selection: $selectedTab) {
-            TodayView()
-                .tabItem {
-                    Label("Heute", systemImage: "checkmark.circle.fill")
-                }
-                .tag(0)
+        ZStack(alignment: .bottom) {
+            tabContent
+                .toolbar(.hidden, for: .tabBar)
+                .ignoresSafeArea(.container, edges: .bottom)
+                .padding(.bottom, 56)
 
-            HistoryView()
-                .tabItem {
-                    Label("Fortschritt", systemImage: "chart.bar.fill")
-                }
-                .tag(1)
-
-            AchievementsView()
-                .tabItem {
-                    Label("Erfolge", systemImage: "trophy.fill")
-                }
-                .tag(2)
+            FloatingTabBar(selectedTab: $selectedTab)
+                .padding(.bottom, 12)
         }
         .onChange(of: scenePhase) { _, newPhase in
-            if newPhase == .active && selectedTab == 0 {
+            handleScenePhase(newPhase)
+        }
+        .onChange(of: selectedTab) { _, newTab in
+            handleTabSwitch(to: newTab)
+        }
+        .preferredColorScheme(preferredColorScheme)
+    }
+
+    @ViewBuilder
+    private var tabContent: some View {
+        switch selectedTab {
+        case 0: TodayView()
+        case 1: HistoryView()
+        case 2: AchievementsView()
+        default: TodayView()
+        }
+    }
+
+    // MARK: - scenePhase + tabSwitch (preserved from v15)
+
+    private func handleScenePhase(_ newPhase: ScenePhase) {
+        switch newPhase {
+        case .active:
+            if selectedTab == 0 {
                 rescheduleAllReminders()
-                // Erst-Tag-Special-Case: Wenn die App ihren aller-
-                // ersten Tag nach abgeschlossenem Onboarding sieht → wird
-                // eine Achievement-Stufe (days: 0 / Onboarding-Starter)
-                // gefeuert. Die eigentliche Konfetti-/Sound-Animation
-                // passiert in TodayView.markAsTaken(), wenn der User
-                // dort den „Kreatin genommen"-Button drückt.
                 _ = store.celebrateOnboardingIfFirstTake()
                 Task { @MainActor in
                     await LiveActivityManager.shared.startOrUpdate(
@@ -86,37 +94,30 @@ struct ContentView: View {
                         creatineTaken: store.takenToday
                     )
                 }
-            } else if newPhase == .active && selectedTab != 0 {
-                Task { @MainActor in
-                    await LiveActivityManager.shared.end()
-                }
-            } else if newPhase == .background {
-                Task { @MainActor in
-                    await LiveActivityManager.shared.end()
-                }
+            } else {
+                Task { @MainActor in await LiveActivityManager.shared.end() }
             }
+        case .background:
+            Task { @MainActor in await LiveActivityManager.shared.end() }
+        default:
+            break
         }
-        .onChange(of: selectedTab) { _, newTab in
-            // Wenn der User auf den Heute-Tab wechselt UND es noch
-            // Nag-Slots in der Zukunft gibt, neu planen (= weiter
-            // „angepingt" werden, bis er das Kreatin markiert).
+    }
+
+    private func handleTabSwitch(to newTab: Int) {
+        if newTab == 0 { rescheduleAllReminders() }
+        Task { @MainActor in
             if newTab == 0 {
-                rescheduleAllReminders()
-            }
-            Task { @MainActor in
-                if newTab == 0 {
-                    await LiveActivityManager.shared.startOrUpdate(
-                        streak: store.currentStreak,
-                        waterML: waterStore.todayAmount,
-                        waterGoalML: waterStore.dailyGoal,
-                        creatineTaken: store.takenToday
-                    )
-                } else {
-                    await LiveActivityManager.shared.end()
-                }
+                await LiveActivityManager.shared.startOrUpdate(
+                    streak: store.currentStreak,
+                    waterML: waterStore.todayAmount,
+                    waterGoalML: waterStore.dailyGoal,
+                    creatineTaken: store.takenToday
+                )
+            } else {
+                await LiveActivityManager.shared.end()
             }
         }
-        .preferredColorScheme(preferredColorScheme)
     }
 }
 
