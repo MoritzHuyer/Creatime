@@ -48,7 +48,7 @@ struct DateSubtitle: View {
     let text: String
     var body: some View {
         Text(text)
-            .font(Color.ctSectionLabel).tracking(0.6)
+            .font(.ctSectionLabel).tracking(0.6)
             .textCase(.uppercase)
             .foregroundStyle(Color.ctInkSecondary)
     }
@@ -57,7 +57,7 @@ struct DateSubtitle: View {
 struct PageTitle: View {
     let text: String
     var body: some View {
-        Text(text).font(Color.ctPageTitle)
+        Text(text).font(.ctPageTitle)
     }
 }
 
@@ -85,11 +85,11 @@ struct HeroStreakBlock: View {
                     .font(.system(size: 26))
                     .foregroundStyle(Color.ctStreakFlame)
                 Text("\(streakDays)")
-                    .font(Color.ctStreakHero).tracking(-2.5)
+                    .font(.ctStreakHero).tracking(-2.5)
                     .monospacedDigit()
                     .contentTransition(.numericText())
                 Text("Tage am Stück")
-                    .font(Color.ctSubheadline)
+                    .font(.ctSubheadline)
                     .foregroundStyle(Color.ctInkSecondary)
                 HStack(spacing: 8) {
                     if securedToday {
@@ -131,7 +131,7 @@ struct CheckRingCard: View {
                                 style: StrokeStyle(lineWidth: 8, lineCap: .round)
                             )
                             .rotationEffect(.degrees(-90))
-                            .animation(Color.ctRingFill, value: isTaken)
+                            .animation(.ctRingFill, value: isTaken)
                         if isTaken {
                             Image(systemName: "checkmark")
                                 .font(.system(size: 34, weight: .heavy))
@@ -150,13 +150,13 @@ struct CheckRingCard: View {
 
                 VStack(alignment: .leading, spacing: 3) {
                     Text("Kreatin")
-                        .font(Color.ctSectionLabel).tracking(0.8)
+                        .font(.ctSectionLabel).tracking(0.8)
                         .textCase(.uppercase)
                         .foregroundStyle(Color.ctKreatin)
                     Text("5 g Monohydrat")
-                        .font(Color.ctCardTitle)
+                        .font(.ctCardTitle)
                     Text(isTaken ? "Heute erledigt" : "Noch nicht genommen")
-                        .font(Color.ctSubheadline)
+                        .font(.ctSubheadline)
                         .foregroundStyle(Color.ctInkSecondary)
                     Text("Ring tippen zum Abhaken")
                         .font(.caption)
@@ -187,14 +187,14 @@ struct WaterCard: View {
                 HStack(spacing: 6) {
                     Image(systemName: "drop.fill").font(.system(size: 14)).foregroundStyle(Color.ctWasser)
                     Text("Wasser")
-                        .font(Color.ctSectionLabel).tracking(0.8)
+                        .font(.ctSectionLabel).tracking(0.8)
                         .textCase(.uppercase)
                         .foregroundStyle(Color.ctWasser)
                     Spacer()
                     if hasHealthSync {
                         HStack(spacing: 4) {
                             Image(systemName: "heart.fill").font(.system(size: 10)).foregroundStyle(.pink)
-                            Text("Health-Sync").font(Color.ctChipLabel)
+                            Text("Health-Sync").font(.ctChipLabel)
                         }
                         .foregroundStyle(Color.ctInkSecondary)
                         .padding(.horizontal, 9).padding(.vertical, 3)
@@ -204,11 +204,11 @@ struct WaterCard: View {
 
                 HStack(alignment: .firstTextBaseline, spacing: 6) {
                     Text("\(amount)")
-                        .font(Color.ctWaterHero).tracking(-1.2)
+                        .font(.ctWaterHero).tracking(-1.2)
                         .monospacedDigit()
                         .contentTransition(.numericText())
                     Text("/ \(goal) ml")
-                        .font(Color.ctSubheadline)
+                        .font(.ctSubheadline)
                         .foregroundStyle(Color.ctInkSecondary)
                     Spacer()
                 }
@@ -248,7 +248,7 @@ struct WasserBar: View {
                 Capsule()
                     .fill(LinearGradient(colors: [Color.ctWasserBright, Color.ctWasser], startPoint: .leading, endPoint: .trailing))
                     .frame(width: max(8, geo.size.width * CGFloat(progress)))
-                    .animation(Color.ctBarFill, value: progress)
+                    .animation(.ctBarFill, value: progress)
             }
         }
     }
@@ -299,7 +299,7 @@ struct CalendarCard: View {
                     Button { changeMonth(-1) } label: { Image(systemName: "chevron.left").font(.subheadline.weight(.semibold)) }
                         .buttonStyle(.plain).foregroundStyle(.primary)
                     Spacer()
-                    Text(monthTitle).font(Color.ctCardTitle)
+                    Text(monthTitle).font(.ctCardTitle)
                     Spacer()
                     Button { changeMonth(1) } label: { Image(systemName: "chevron.right").font(.subheadline.weight(.semibold)) }
                         .buttonStyle(.plain).foregroundStyle(.primary)
@@ -403,9 +403,9 @@ struct BuddyBattleCard: View {
         BaseCard {
             VStack(alignment: .leading, spacing: 12) {
                 HStack {
-                    Text("Buddy-Battle").font(Color.ctCardTitle)
+                    Text("Buddy-Battle").font(.ctCardTitle)
                     Spacer()
-                    Text("Einladen").font(Color.ctSubheadline.weight(.semibold)).foregroundStyle(Color.ctAccent)
+                    Text("Einladen").font(.ctSubheadline.weight(.semibold)).foregroundStyle(Color.ctAccent)
                 }
                 Text("Noch \(max(0, maxStreak - store.currentStreak)) Tage bis Platz 1")
                     .font(.caption).foregroundStyle(Color.ctInkSecondary)
@@ -443,16 +443,16 @@ struct BuddyRow: View {
 
             VStack(alignment: .leading, spacing: 5) {
                 HStack(alignment: .firstTextBaseline) {
-                    Text(name).font(Color.ctSubheadline.weight(isSelf ? .bold : .semibold))
+                    Text(name).font(.ctSubheadline.weight(isSelf ? .bold : .semibold))
                     if let badge { Text(badge).font(.caption.weight(.semibold)).foregroundStyle(Color.ctAccent) }
                     Spacer()
-                    Text("\(streak)").font(Color.ctSubheadline.weight(.bold))
+                    Text("\(streak)").font(.ctSubheadline.weight(.bold))
                     Text(" Tage").font(.caption.weight(.medium)).foregroundStyle(Color.ctInkSecondary)
                 }
                 Capsule().fill(Color.ctInkTertiary.opacity(0.5)).frame(height: 6)
                     .overlay(GeometryReader { geo in
                         Capsule().fill(barColor)
-                            .frame(width: max(0, geo.size.width * CGFloat(pct)))
+                            .frame(width: Swift.max(0, geo.size.width * CGFloat(pct)))
                     })
             }
         }
@@ -468,7 +468,7 @@ struct PhotoStripCard: View {
         BaseCard {
             VStack(alignment: .leading, spacing: 14) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Foto-Streak").font(Color.ctCardTitle)
+                    Text("Foto-Streak").font(.ctCardTitle)
                     Text("Dein visuelles Tagebuch — 1 Foto pro Tag")
                         .font(.caption).foregroundStyle(Color.ctInkSecondary)
                 }
@@ -478,7 +478,7 @@ struct PhotoStripCard: View {
                         // Heute CTA tile
                         VStack(spacing: 4) {
                             Image(systemName: "plus").font(.system(size: 22, weight: .semibold)).foregroundStyle(Color.ctAccent)
-                            Text("Heute").font(Color.ctChipLabel).tracking(0.4).foregroundStyle(Color.ctAccent)
+                            Text("Heute").font(.ctChipLabel).tracking(0.4).foregroundStyle(Color.ctAccent)
                         }
                         .frame(width: 74, height: 92)
                         .overlay(RoundedRectangle(cornerRadius: 16)
@@ -503,7 +503,7 @@ struct PhotoTile: View {
         VStack(spacing: 4) {
             Image(systemName: "photo")
                 .font(.system(size: 20)).foregroundStyle(Color.ctInkSecondary.opacity(0.7))
-            Text(label).font(Color.ctChipLabel).tracking(0.4)
+            Text(label).font(.ctChipLabel).tracking(0.4)
                 .foregroundStyle(Color.ctInkSecondary.opacity(0.7))
         }
         .frame(width: 74, height: 92)
@@ -530,12 +530,12 @@ struct NextGoalCard: View {
         BaseCard {
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
-                    Text("Nächstes Ziel").font(Color.ctCardTitle)
+                    Text("Nächstes Ziel").font(.ctCardTitle)
                     Spacer()
-                    Text("\(progress) / \(goal)").font(Color.ctSubheadline).foregroundStyle(Color.ctInkSecondary)
+                    Text("\(progress) / \(goal)").font(.ctSubheadline).foregroundStyle(Color.ctInkSecondary)
                 }
                 Text("\(title) — noch \(remaining) Tag\(remaining == 1 ? "" : "e")")
-                    .font(Color.ctSubheadline).foregroundStyle(Color.ctInkSecondary)
+                    .font(.ctSubheadline).foregroundStyle(Color.ctInkSecondary)
 
                 Capsule().fill(Color.ctInkTertiary.opacity(0.5)).frame(height: 10)
                     .overlay(GeometryReader { geo in
@@ -544,7 +544,7 @@ struct NextGoalCard: View {
                                 colors: [Color(hex: "#FFC489"), Color.ctAccent],
                                 startPoint: .leading, endPoint: .trailing
                             )
-                        ).frame(width: max(0, geo.size.width * CGFloat(pct)))
+                        ).frame(width: Swift.max(0, geo.size.width * CGFloat(pct)))
                     })
             }
         }
@@ -627,11 +627,11 @@ struct iOSFormRow: View {
         } label: {
             HStack {
                 Text(title)
-                    .font(Color.ctBody)
+                    .font(.ctBody)
                     .foregroundStyle(isAccent ? Color.ctAccent : .primary)
                 Spacer()
                 if let detail {
-                    Text(detail).font(Color.ctBody).foregroundStyle(Color.ctInkSecondary)
+                    Text(detail).font(.ctBody).foregroundStyle(Color.ctInkSecondary)
                 }
                 Image(systemName: "chevron.right")
                     .font(.caption.weight(.semibold))
@@ -659,7 +659,7 @@ struct iOSToggleRow: View {
     var body: some View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
-                Text(title).font(Color.ctBody)
+                Text(title).font(.ctBody)
                 if let detail { Text(detail).font(.caption).foregroundStyle(Color.ctInkSecondary) }
             }
             Spacer(minLength: 0)
@@ -723,7 +723,7 @@ struct StepperRow: View {
     var body: some View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
-                Text(label).font(Color.ctBody)
+                Text(label).font(.ctBody)
                 Text("\(value) ml")
                     .font(.caption).foregroundStyle(Color.ctInkSecondary)
             }
@@ -791,7 +791,7 @@ struct TabBarButton: View {
                 Image(systemName: systemImage)
                     .font(.system(size: 22))
                     .foregroundStyle(isSelected ? Color.ctAccent : Color.ctTabInactive)
-                Text(label).font(Color.ctTabLabel)
+                Text(label).font(.ctTabLabel)
                     .foregroundStyle(isSelected ? Color.ctAccent : Color.ctTabInactive)
             }
             .frame(width: CTLayout.tabButtonWidth)

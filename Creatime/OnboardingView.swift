@@ -48,10 +48,10 @@ struct OnboardingView: View {
         VStack(spacing: 20) {
             Text("💪").font(.system(size: 80))
             Text("Willkommen bei Creatime")
-                .font(Color.ctPageTitle)
+                .font(.ctPageTitle)
                 .multilineTextAlignment(.center)
             Text("Deine tägliche Kreatin-Routine: ein Tap am Tag, eine wachsende Streak und dein Wasserhaushalt im Blick.")
-                .font(Color.ctSubheadline)
+                .font(.ctSubheadline)
                 .foregroundStyle(Color.ctInkSecondary)
                 .multilineTextAlignment(.center)
         }
@@ -62,10 +62,10 @@ struct OnboardingView: View {
         VStack(spacing: 20) {
             Text("⏰").font(.system(size: 60))
             Text("Wann nimmst du dein Kreatin?")
-                .font(Color.ctCardTitle)
+                .font(.ctCardTitle)
                 .multilineTextAlignment(.center)
             Text("Wir erinnern dich täglich zu dieser Uhrzeit — aber nur, wenn du es noch nicht bestätigt hast.")
-                .font(Color.ctSubheadline)
+                .font(.ctSubheadline)
                 .foregroundStyle(Color.ctInkSecondary)
                 .multilineTextAlignment(.center)
 
@@ -79,7 +79,7 @@ struct OnboardingView: View {
         VStack(spacing: 20) {
             Text("💧").font(.system(size: 60))
             Text("Dein tägliches Wasserziel")
-                .font(Color.ctCardTitle)
+                .font(.ctCardTitle)
 
             Picker("Ziel", selection: $waterGoal) {
                 ForEach(Array(stride(from: 1500, through: 4000, by: 250)), id: \.self) { ml in
@@ -90,7 +90,7 @@ struct OnboardingView: View {
 
             Toggle(isOn: $wantsHealthSync) {
                 Label("In Apple Health speichern", systemImage: "heart.fill")
-                    .font(Color.ctSubheadline)
+                    .font(.ctSubheadline)
             }
             .padding(.horizontal, 8)
             .opacity(HealthKitManager.shared.isAvailable ? 1 : 0)

@@ -53,7 +53,7 @@ struct HistoryView: View {
             VStack(alignment: .trailing, spacing: 2) {
                 HStack(alignment: .lastTextBaseline, spacing: 0) {
                     Text("\(fulfilmentPct)")
-                        .font(Color.ctBigNumber).tracking(-2)
+                        .font(.ctBigNumber).tracking(-2)
                         .foregroundStyle(Color.ctAccent)
                     Text("%")
                         .font(.system(size: 28, weight: .bold))

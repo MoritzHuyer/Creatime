@@ -42,13 +42,13 @@ struct SettingsView: View {
             HStack {
                 Spacer().frame(width: 52)
                 Text("Einstellungen")
-                    .font(Color.ctCardTitle)
+                    .font(.ctCardTitle)
                     .frame(maxWidth: .infinity)
                 Button("Fertig") {
                     Haptics.tap()
                     dismiss()
                 }
-                .font(Color.ctBody)
+                .font(.ctBody)
                 .foregroundStyle(Color.ctAccent)
                 .frame(width: 52, alignment: .trailing)
             }
@@ -86,10 +86,10 @@ struct SettingsView: View {
                         CardSeparator()
                         Button { showReminderTimeSheet = true } label: {
                             HStack {
-                                Text("Uhrzeit").font(Color.ctBody)
+                                Text("Uhrzeit").font(.ctBody)
                                 Spacer()
                                 Text(formatTime(reminderHour, reminderMinute))
-                                    .font(Color.ctBody).foregroundStyle(Color.ctAccent)
+                                    .font(.ctBody).foregroundStyle(Color.ctAccent)
                                 Image(systemName: "chevron.right")
                                     .font(.caption.weight(.semibold))
                                     .foregroundStyle(Color.ctInkTertiary)
@@ -128,7 +128,7 @@ struct SettingsView: View {
                                     Circle().fill(theme.primary)
                                         .frame(width: 22, height: 22)
                                         .overlay(Circle().strokeBorder(.white.opacity(0.6), lineWidth: 1))
-                                    Text(theme.displayName).font(Color.ctBody)
+                                    Text(theme.displayName).font(.ctBody)
                                     Spacer()
                                     if themeManager.theme == theme {
                                         Image(systemName: "checkmark")
@@ -150,7 +150,7 @@ struct SettingsView: View {
                         HStack(spacing: 12) {
                             VStack(alignment: .leading, spacing: 3) {
                                 Text("\(store.freezesRemainingThisMonth) von \(CreatineStore.freezeBudgetPerMonth) übrig")
-                                    .font(Color.ctBody)
+                                    .font(.ctBody)
                                 Text("Im Monat bis zu \(CreatineStore.freezeBudgetPerMonth) Eis-Tage.")
                                     .font(.caption)
                                     .foregroundStyle(Color.ctInkSecondary)
@@ -171,7 +171,7 @@ struct SettingsView: View {
                                 .foregroundStyle(Color.ctWasser)
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(store.vacationEnabled ? "Aktiv" : "Inaktiv")
-                                    .font(Color.ctBody)
+                                    .font(.ctBody)
                                 if let until = store.vacationUntil, until > Date() {
                                     Text("Bis \(until.formatted(.dateTime.day().month(.wide)))")
                                         .font(.caption).foregroundStyle(Color.ctInkSecondary)
@@ -300,7 +300,7 @@ private struct SectionHeader: View {
         if title.isEmpty { Color.clear.frame(height: 16) }
         else {
             Text(title)
-                .font(Color.ctSectionLabel).tracking(0.2)
+                .font(.ctSectionLabel).tracking(0.2)
                 .textCase(.uppercase)
                 .foregroundStyle(Color.ctInkSecondary)
                 .frame(maxWidth: .infinity, alignment: .leading)

@@ -38,11 +38,11 @@ struct AchievementsView: View {
 
                     VStack(spacing: 4) {
                         Text("\(unlocked.count)")
-                            .font(Color.ctAchievementHero)
+                            .font(.ctAchievementHero)
                             .monospacedDigit()
                             .contentTransition(.numericText())
                         Text("von \(Achievement.all.count) Abzeichen freigeschaltet")
-                            .font(Color.ctSubheadline)
+                            .font(.ctSubheadline)
                             .foregroundStyle(Color.ctInkSecondary)
                     }
                     .frame(maxWidth: .infinity)
@@ -60,7 +60,7 @@ struct AchievementsView: View {
                     BaseCard {
                         VStack(alignment: .leading, spacing: 12) {
                             HStack {
-                                Text("Abzeichen").font(Color.ctCardTitle)
+                                Text("Abzeichen").font(.ctCardTitle)
                                 Spacer()
                                 Text("Alle anzeigen").font(Color.ctSubheadline.weight(.semibold)).foregroundStyle(Color.ctAccent)
                             }
