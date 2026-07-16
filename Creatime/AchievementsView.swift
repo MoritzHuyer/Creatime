@@ -59,11 +59,10 @@ struct AchievementsView: View {
 
                     BaseCard {
                         VStack(alignment: .leading, spacing: 12) {
-                            HStack {
-                                Text("Abzeichen").font(.ctCardTitle)
-                                Spacer()
-                                Text("Alle anzeigen").font(Color.ctSubheadline.weight(.semibold)).foregroundStyle(Color.ctAccent)
-                            }
+                            // „Alle anzeigen" entfernt: Das Grid zeigt bereits
+                            // alle Abzeichen — das Label sah aus wie ein Button,
+                            // hatte aber keine Aktion (toter Link).
+                            Text("Abzeichen").font(.ctCardTitle)
 
                             LazyVGrid(columns: columns, spacing: 12) {
                                 ForEach(unlocked, id: \.id) { a in

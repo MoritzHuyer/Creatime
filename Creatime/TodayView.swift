@@ -21,14 +21,19 @@ struct TodayView: View {
 
     @AppStorage("reminderHour") private var reminderHour = 20
     @AppStorage("reminderMinute") private var reminderMinute = 0
+    @AppStorage("remindersEnabled") private var remindersEnabled = true
     @AppStorage("healthSyncEnabled") private var healthSyncEnabled = false
 
     @State private var showVacationSheet = false
-    @State private var showSettings = false
     @State private var confettiTrigger = false
 
     private var dateText: String {
-        Date().formatted(.dateTime.weekday(.wide).day().month(.wide))
+        // Feste deutsche Locale: Die App ist komplett deutsch — ohne das
+        // zeigt ein Gerät mit englischer Sprache „Thursday, 16. July".
+        Date().formatted(
+            .dateTime.weekday(.wide).day().month(.wide)
+                .locale(Locale(identifier: "de_DE"))
+        )
     }
 
     private var securedToday: Bool {
@@ -64,15 +69,17 @@ struct TodayView: View {
                         amount: water.todayAmount,
                         goal: water.dailyGoal,
                         hasHealthSync: healthSyncEnabled,
-                        onAdd: { addWater(waterStep) },
-                        onSubtract: { addWater(-waterStep) },
-                        step: waterStep
+                        quickAmounts: water.quickAmounts,
+                        onAdd: { addWater($0) },
+                        onSubtract: { addWater(-waterStep) }
                     )
 
                     if store.untouchedToday { pauseMenuSpacer }
                 }
                 .ctPagePadded()
-                .padding(.bottom, 96)
+                // Kleiner Puffer reicht — den Platz für die schwebende
+                // Tab-Bar reserviert bereits das safeAreaInset in ContentView.
+                .padding(.bottom, 12)
                 .animation(.snappy, value: store.vacationEnabled)
             }
 
@@ -173,6 +180,9 @@ struct TodayView: View {
             Haptics.success()
             sounds.playCreatineMark()
         }
+        // Der Tag ist jetzt gesichert — sonst würde die heutige
+        // Kreatin-Erinnerung trotz Pause noch feuern.
+        rescheduleNotifications()
     }
 
     private func addWater(_ ml: Int) {
@@ -188,7 +198,10 @@ struct TodayView: View {
             takenToday: store.takenToday,
             suggestedHours: store.suggestedReminderHoursToday,
             fallbackHour: reminderHour,
-            fallbackMinute: reminderMinute
+            fallbackMinute: reminderMinute,
+            // Ohne diesen Parameter (Default: true) würde jeder Abhak-Tap
+            // die in den Settings deaktivierten Erinnerungen reaktivieren.
+            remindersEnabled: remindersEnabled
         )
     }
 

@@ -182,7 +182,7 @@ struct SettingsView: View {
                             }
                             Spacer()
                             Button("Bearbeiten") { showVacationSheet = true }
-                                .font(Color.ctSubheadline.weight(.semibold))
+                                .font(.ctSubheadline.weight(.semibold))
                                 .foregroundStyle(Color.ctAccent)
                         }
                         .padding(16)

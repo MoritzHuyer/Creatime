@@ -41,11 +41,19 @@ final class BuddySystem {
     private let defaults = SharedDefaults.store
 
     init() {
-        // Alphabet ohne leicht verwechselbare Zeichen (kein 0/O, 1/I/L);
-        // Crockford-ähnlich.
-        let alphabet = "0123456789ABCDEFGHJKLMNPQRSTUVWXYZ"
-        let chars = (0..<6).map { _ in alphabet.randomElement()! }
-        self.myInviteCode = String(chars)
+        // Der Invite-Code muss PERSISTIERT werden — sonst bekäme der
+        // Nutzer bei jedem App-Start einen neuen Code und bereits
+        // geteilte Codes wären sofort ungültig.
+        if let saved = defaults.string(forKey: "myInviteCode"), !saved.isEmpty {
+            self.myInviteCode = saved
+        } else {
+            // Alphabet ohne leicht verwechselbare Zeichen (kein O/I/L);
+            // Crockford-ähnlich.
+            let alphabet = "0123456789ABCDEFGHJKLMNPQRSTUVWXYZ"
+            let code = String((0..<6).map { _ in alphabet.randomElement()! })
+            defaults.set(code, forKey: "myInviteCode")
+            self.myInviteCode = code
+        }
         self.buddyName = defaults.string(forKey: "buddyName") ?? ""
         self.buddyStreak = defaults.integer(forKey: "buddyStreak")
         let ts = defaults.object(forKey: "lastBuddyUpdate") as? Double

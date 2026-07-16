@@ -142,10 +142,16 @@ enum MetricsCalculator {
         guard let monday = calendar.date(byAdding: .day, value: -mondayOffset, to: reference)
         else { return 0 }
         var total = 0
+        var countedDays = 0
         for offset in 0..<7 {
             guard let day = calendar.date(byAdding: .day, value: offset, to: monday) else { continue }
+            // Zukünftige Tage der LAUFENDEN Woche nicht mitzählen — sonst
+            // drückt jeder noch nicht erlebte Tag den Schnitt Richtung 0
+            // und der Wochenvergleich zeigt montags immer einen Einbruch.
+            if day > reference { break }
             total += waterByDay[DayKey.string(for: day)] ?? 0
+            countedDays += 1
         }
-        return total / 7
+        return countedDays > 0 ? total / countedDays : 0
     }
 }

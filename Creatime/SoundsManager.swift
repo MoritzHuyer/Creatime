@@ -48,6 +48,13 @@ final class SoundsManager {
 
     static let storageKey = "soundTheme"
 
+    /// Vom Settings-Toggle „Sounds" gesteuert (Key "soundsEnabled",
+    /// Default: an). Haptics laufen bewusst weiter — der Schalter
+    /// betrifft nur das Audio.
+    private var soundsEnabled: Bool {
+        UserDefaults.standard.object(forKey: "soundsEnabled") as? Bool ?? true
+    }
+
     init(theme: SoundTheme = .gym, defaults: UserDefaults = .standard) {
         self.defaults = defaults
         notificationFeedback.prepare()
@@ -76,24 +83,24 @@ final class SoundsManager {
     // MARK: - Action-Methoden
 
     func playWaterSplash() {
-        if let id = soundID(for: .waterSplash) {
+        if soundsEnabled, let id = soundID(for: .waterSplash) {
             AudioServicesPlaySystemSound(id)
         }
         trigger(.medium)
     }
 
     func playCreatineMark() {
-        if let id = soundID(for: .creatineMark) {
+        if soundsEnabled, let id = soundID(for: .creatineMark) {
             AudioServicesPlaySystemSound(id)
         }
         trigger(.heavy)
     }
-
+    
     /// Wasser-Ziel erreicht! Bell + Punch mit 140 ms Versatz.
     /// Da es nur noch Gym gibt, fallen die 4 Varianten weg — immer
     /// der gleiche kraftvolle Double-Punch + Heavy-Haptic.
     func playGoalReached() {
-        if let bellID = soundID(for: .goalReached) {
+        if soundsEnabled, let bellID = soundID(for: .goalReached) {
             AudioServicesPlaySystemSound(bellID)
             Task { @MainActor in
                 try? await Task.sleep(for: .milliseconds(140))

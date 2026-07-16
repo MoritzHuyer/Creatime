@@ -15,17 +15,14 @@ struct HistoryView: View {
 
     @Environment(CreatineStore.self) private var store
     @Environment(WaterStore.self) private var water
+    @Environment(PhotoStreakStore.self) private var photoStore
+    @Environment(SoundsManager.self) private var sounds
 
-    @State private var showSettings = false
+    /// Öffnet den System-Foto-Picker für die Foto-Streak.
+    @State private var showPhotoPicker = false
 
     private var fulfilmentPct: Int {
         Int((store.last30DaysRate * 100).rounded())
-    }
-
-    private var recentPhotos: [(label: String, key: String)] {
-        [
-            ("Mo", "mo"), ("So", "so"), ("Sa", "sa"), ("Fr", "fr")
-        ]
     }
 
     var body: some View {
@@ -37,10 +34,20 @@ struct HistoryView: View {
                     header
                     CalendarCard()
                     BuddyBattleCard()
-                    PhotoStripCard(recentPhotos: recentPhotos)
+                    PhotoStripCard(onAddPhoto: { showPhotoPicker = true })
                 }
                 .ctPagePadded()
                 .padding(.vertical, 16)
+            }
+        }
+        .sheet(isPresented: $showPhotoPicker) {
+            // PHPicker braucht keine Foto-Berechtigung — der Nutzer wählt
+            // pro Aktion genau ein Bild aus (siehe PhotoStreakView.swift).
+            PhotoStreakPicker { image in
+                if let image, photoStore.add(image: image) {
+                    Haptics.success()
+                    sounds.playCreatineMark()
+                }
             }
         }
     }
@@ -58,7 +65,10 @@ struct HistoryView: View {
                         .font(.system(size: 28, weight: .bold))
                         .foregroundStyle(Color.ctAccent)
                 }
-                Text("Juli-Erfüllung")
+                // Ehrliches Label: Die Zahl ist eine rollierende 30-Tage-Quote,
+                // kein Kalendermonat — „Juli-Erfüllung" war hartkodiert und
+                // hätte auch im August noch „Juli" angezeigt.
+                Text("Letzte 30 Tage")
                     .font(.caption)
                     .foregroundStyle(Color.ctInkSecondary)
             }

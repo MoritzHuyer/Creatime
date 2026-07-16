@@ -33,6 +33,7 @@ struct ContentView: View {
 
     private func rescheduleAllReminders() {
         store.reload()
+        waterStore.reload()
         NotificationManager.rescheduleSmartReminders(
             takenToday: store.takenToday,
             suggestedHours: store.suggestedReminderHoursToday,
@@ -103,6 +104,10 @@ struct ContentView: View {
     private func handleScenePhase(_ newPhase: ScenePhase) {
         switch newPhase {
         case .active:
+            // Hintergrund-Änderungen (Widget, Siri, Quick-Actions schreiben
+            // direkt in die App Group) auf JEDEM Tab frisch einlesen:
+            store.reload()
+            waterStore.reload()
             if selectedTab == 0 {
                 rescheduleAllReminders()
                 _ = store.celebrateOnboardingIfFirstTake()

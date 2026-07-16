@@ -95,7 +95,9 @@ struct HeroStreakBlock: View {
                     if securedToday {
                         CTChipSurface("Heute gesichert", tint: .success, symbol: "checkmark")
                     }
-                    CTChipSurface("\(freezesRemaining) Freeze übrig", tint: .freeze, symbol: "snowflake")
+                    if freezesRemaining > 0 {
+                        CTChipSurface("\(freezesRemaining) Freeze übrig", tint: .freeze, symbol: "snowflake")
+                    }
                     if bestStreak > 0 {
                         CTChipSurface("Best: \(bestStreak)", tint: .neutral)
                     }
@@ -175,9 +177,15 @@ struct WaterCard: View {
     let amount: Int
     let goal: Int
     let hasHealthSync: Bool
-    let onAdd: () -> Void
+    /// Die in Settings konfigurierten Schnellwahl-Größen (z.B. 250/330/500).
+    let quickAmounts: [Int]
+    let onAdd: (Int) -> Void
     let onSubtract: () -> Void
-    let step: Int
+
+    /// Maximal 3 Buttons, aufsteigend — mehr passt nicht in die Zeile.
+    private var buttons: [Int] {
+        Array(quickAmounts.sorted().prefix(3))
+    }
 
     private var pct: Double { guard goal > 0 else { return 0 }; return min(1.0, Double(amount) / Double(goal)) }
 
@@ -216,14 +224,17 @@ struct WaterCard: View {
                 WasserBar(progress: pct).frame(height: 10)
 
                 HStack(spacing: 10) {
-                    Button(action: onAdd) {
-                        Text("+ \(step) ml")
-                            .font(.system(size: 17, weight: .semibold))
-                            .foregroundStyle(Color.ctWasserBright)
-                            .frame(maxWidth: .infinity, minHeight: 50)
-                            .background(Color.ctWasserSurface, in: Capsule())
+                    ForEach(buttons, id: \.self) { step in
+                        Button { onAdd(step) } label: {
+                            Text(buttons.count > 2 ? "+\(step)" : "+ \(step) ml")
+                                .font(.system(size: 17, weight: .semibold))
+                                .minimumScaleFactor(0.7)
+                                .foregroundStyle(Color.ctWasserBright)
+                                .frame(maxWidth: .infinity, minHeight: 50)
+                                .background(Color.ctWasserSurface, in: Capsule())
+                        }
+                        .buttonStyle(.plain)
                     }
-                    .buttonStyle(.plain)
                     Button(action: onSubtract) {
                         Image(systemName: "minus")
                             .font(.system(size: 22))
@@ -397,6 +408,9 @@ struct LegendDot: View {
 struct BuddyBattleCard: View {
     @Environment(CreatineStore.self) private var store
 
+    /// Öffnet die BuddyView (Invite-Code, Teilen, Streak-Editor) als Sheet.
+    @State private var showBuddySheet = false
+
     private var maxStreak: Int { Swift.max(1, store.bestStreak) }
 
     var body: some View {
@@ -405,7 +419,13 @@ struct BuddyBattleCard: View {
                 HStack {
                     Text("Buddy-Battle").font(.ctCardTitle)
                     Spacer()
-                    Text("Einladen").font(.ctSubheadline.weight(.semibold)).foregroundStyle(Color.ctAccent)
+                    Button {
+                        Haptics.tap()
+                        showBuddySheet = true
+                    } label: {
+                        Text("Einladen").font(.ctSubheadline.weight(.semibold)).foregroundStyle(Color.ctAccent)
+                    }
+                    .buttonStyle(.plain)
                 }
                 Text("Vergleiche deine Streak mit Freund:innen.")
                     .font(.caption).foregroundStyle(Color.ctInkSecondary)
@@ -431,8 +451,8 @@ struct BuddyBattleCard: View {
                         .multilineTextAlignment(.center)
                         .frame(maxWidth: .infinity)
                     Button {
-                        // TODO: invite-flow (folgt in n\u00e4chster Phase \u2014 share-sheet oder contact picker)
                         Haptics.tap()
+                        showBuddySheet = true
                     } label: {
                         Label("Freund:in einladen", systemImage: "person.crop.circle.badge.plus")
                             .font(.ctSubheadline.weight(.semibold))
@@ -448,6 +468,26 @@ struct BuddyBattleCard: View {
                 .padding(.vertical, 6)
             }
         }
+        .sheet(isPresented: $showBuddySheet) {
+            BuddySheet()
+        }
+    }
+}
+
+/// Präsentiert die voll funktionsfähige BuddyView (Invite-Code kopieren,
+/// per iMessage/AirDrop teilen, Buddy-Streak manuell eintragen, trennen)
+/// als Sheet — die View existierte schon, war aber nirgends erreichbar.
+struct BuddySheet: View {
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                BuddyView()
+                    .padding(16)
+            }
+            .navigationTitle("Buddy-Battle")
+            .navigationBarTitleDisplayMode(.inline)
+        }
+        .presentationDetents([.medium, .large])
     }
 }
 
@@ -490,32 +530,50 @@ struct BuddyRow: View {
 // MARK: - PhotoStripCard
 
 struct PhotoStripCard: View {
-    let recentPhotos: [(label: String, key: String)]
+    @Environment(PhotoStreakStore.self) private var photoStore
+
+    /// Wird von der „+"-Kachel aufgerufen — öffnet den Foto-Picker.
+    let onAddPhoto: () -> Void
+
+    /// Neueste Fotos zuerst, maximal 8 Kacheln im Strip.
+    private var recentEntries: [PhotoStreakStore.Entry] {
+        Array(photoStore.entries.sorted { $0.capturedAt > $1.capturedAt }.prefix(8))
+    }
+
+    /// Kachel-Beschriftung, z.B. "Mo" oder "12.7."
+    private func label(for entry: PhotoStreakStore.Entry) -> String {
+        entry.capturedAt.formatted(
+            .dateTime.day().month(.defaultDigits).locale(Locale(identifier: "de_DE"))
+        )
+    }
 
     var body: some View {
         BaseCard {
             VStack(alignment: .leading, spacing: 14) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Foto-Streak").font(.ctCardTitle)
-                    Text("Dein visuelles Tagebuch — 1 Foto pro Tag")
+                    Text("Dein visuelles Tagebuch — 1 Foto pro Woche")
                         .font(.caption).foregroundStyle(Color.ctInkSecondary)
                 }
 
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 10) {
-                        // Heute CTA tile
-                        VStack(spacing: 4) {
-                            Image(systemName: "plus").font(.system(size: 22, weight: .semibold)).foregroundStyle(Color.ctAccent)
-                            Text("Heute").font(.ctChipLabel).tracking(0.4).foregroundStyle(Color.ctAccent)
+                        // CTA-Kachel: öffnet den Foto-Picker
+                        Button(action: onAddPhoto) {
+                            VStack(spacing: 4) {
+                                Image(systemName: "plus").font(.system(size: 22, weight: .semibold)).foregroundStyle(Color.ctAccent)
+                                Text("Neu").font(.ctChipLabel).tracking(0.4).foregroundStyle(Color.ctAccent)
+                            }
+                            .frame(width: 74, height: 92)
+                            .overlay(RoundedRectangle(cornerRadius: 16)
+                                .strokeBorder(style: StrokeStyle(lineWidth: 1.5, dash: [6, 4]))
+                                .foregroundStyle(Color.ctAccent.opacity(0.5)))
+                            .background(Color.ctAccent.opacity(0.06), in: RoundedRectangle(cornerRadius: 16))
                         }
-                        .frame(width: 74, height: 92)
-                        .overlay(RoundedRectangle(cornerRadius: 16)
-                            .strokeBorder(style: StrokeStyle(lineWidth: 1.5, dash: [6, 4]))
-                            .foregroundStyle(Color.ctAccent.opacity(0.5)))
-                        .background(Color.ctAccent.opacity(0.06), in: RoundedRectangle(cornerRadius: 16))
+                        .buttonStyle(.plain)
 
-                        ForEach(recentPhotos, id: \.key) { photo in
-                            PhotoTile(label: photo.label)
+                        ForEach(recentEntries) { entry in
+                            PhotoTile(label: label(for: entry), imageURL: photoStore.url(for: entry))
                         }
                     }
                     .padding(.horizontal, 2)
@@ -527,21 +585,41 @@ struct PhotoStripCard: View {
 
 struct PhotoTile: View {
     let label: String
+    /// Pfad zum echten Foto — wenn nil (oder Datei fehlt), Platzhalter.
+    var imageURL: URL? = nil
+
     var body: some View {
-        VStack(spacing: 4) {
-            Image(systemName: "photo")
-                .font(.system(size: 20)).foregroundStyle(Color.ctInkSecondary.opacity(0.7))
-            Text(label).font(.ctChipLabel).tracking(0.4)
-                .foregroundStyle(Color.ctInkSecondary.opacity(0.7))
+        Group {
+            if let imageURL, let ui = UIImage(contentsOfFile: imageURL.path) {
+                Image(uiImage: ui)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: 74, height: 92)
+                    .overlay(alignment: .bottomLeading) {
+                        Text(label).font(.ctChipLabel).tracking(0.4)
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 6).padding(.vertical, 3)
+                            .background(.black.opacity(0.35), in: Capsule())
+                            .padding(4)
+                    }
+            } else {
+                VStack(spacing: 4) {
+                    Image(systemName: "photo")
+                        .font(.system(size: 20)).foregroundStyle(Color.ctInkSecondary.opacity(0.7))
+                    Text(label).font(.ctChipLabel).tracking(0.4)
+                        .foregroundStyle(Color.ctInkSecondary.opacity(0.7))
+                }
+                .frame(width: 74, height: 92)
+                .background(
+                    LinearGradient(
+                        colors: [Color.gray.opacity(0.2), Color.gray.opacity(0.35)],
+                        startPoint: .topLeading, endPoint: .bottomTrailing
+                    ),
+                    in: RoundedRectangle(cornerRadius: 16)
+                )
+            }
         }
-        .frame(width: 74, height: 92)
-        .background(
-            LinearGradient(
-                colors: [Color.gray.opacity(0.2), Color.gray.opacity(0.35)],
-                startPoint: .topLeading, endPoint: .bottomTrailing
-            ),
-            in: RoundedRectangle(cornerRadius: 16)
-        )
+        .clipShape(RoundedRectangle(cornerRadius: 16))
     }
 }
 

@@ -30,8 +30,13 @@ final class WaterStore {
         didSet {
             guard oldValue != goalMode, goalMode.perUnitML > 0 else { return }
             defaults.set(goalMode.rawValue, forKey: goalModeKey)
-            let steps = (Double(dailyGoal) / goalMode.perUnitML).rounded()
-            dailyGoal = max(Int(goalMode.perUnitML), Int(steps * goalMode.perUnitML))
+            // Im ml-Modus NICHT auf ganze Liter runden — sonst springt ein
+            // 2500-ml-Ziel beim Einheitenwechsel unbemerkt auf 3000 ml.
+            // Dort reichen 50-ml-Schritte; Gläser/Flaschen runden weiter
+            // auf ihre volle Einheit.
+            let roundingStep: Double = goalMode == .ml ? 50 : goalMode.perUnitML
+            let steps = (Double(dailyGoal) / roundingStep).rounded()
+            dailyGoal = max(Int(roundingStep), Int(steps * roundingStep))
             WidgetCenter.shared.reloadAllTimelines()
         }
     }
@@ -143,6 +148,16 @@ final class WaterStore {
     private func save() {
         defaults.set(waterByDay, forKey: storageKey)
         WidgetCenter.shared.reloadAllTimelines()
+    }
+
+    /// Liest den Wasser-Stand aus dem App-Group-Speicher neu ein.
+    /// Nötig, wenn Widget, Siri oder eine Quick-Action im Hintergrund
+    /// Wasser eingetragen haben — die schreiben direkt in die App Group,
+    /// nicht in diese laufende Store-Instanz.
+    func reload() {
+        if let saved = defaults.dictionary(forKey: storageKey) as? [String: Int] {
+            waterByDay = saved
+        }
     }
 
     // MARK: - Aktionen

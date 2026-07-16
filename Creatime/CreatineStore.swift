@@ -166,6 +166,19 @@ final class CreatineStore {
         if let saved = defaults.dictionary(forKey: moodKey) as? [String: String] {
             moodByDay = saved
         }
+        // Auch Feier- und Urlaubs-State nachladen — sonst sind diese
+        // Werte nach Hintergrund-Änderungen (Widget/Siri) veraltet.
+        if let saved = defaults.array(forKey: celebratedKey) as? [Int] {
+            celebratedMilestones = Set(saved)
+        }
+        if let last = defaults.object(forKey: lastCelebratedMilestoneKey) as? Int {
+            lastCelebratedMilestone = last
+        }
+        if let ts = defaults.object(forKey: vacationUntilKey) as? Double {
+            vacationUntil = Date(timeIntervalSince1970: ts)
+        } else {
+            vacationUntil = nil
+        }
         WidgetCenter.shared.reloadAllTimelines()
         AppBadgeManager.setBadge(currentStreak)
         ensureFreezeBudgetIsCurrentMonth()
