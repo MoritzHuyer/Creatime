@@ -397,27 +397,55 @@ struct LegendDot: View {
 struct BuddyBattleCard: View {
     @Environment(CreatineStore.self) private var store
 
-    private var maxStreak: Int { max(1, store.bestStreak) }
+    private var maxStreak: Int { Swift.max(1, store.bestStreak) }
 
     var body: some View {
         BaseCard {
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 14) {
                 HStack {
                     Text("Buddy-Battle").font(.ctCardTitle)
                     Spacer()
                     Text("Einladen").font(.ctSubheadline.weight(.semibold)).foregroundStyle(Color.ctAccent)
                 }
-                Text("Noch \(max(0, maxStreak - store.currentStreak)) Tage bis Platz 1")
+                Text("Vergleiche deine Streak mit Freund:innen.")
                     .font(.caption).foregroundStyle(Color.ctInkSecondary)
 
+                // Eigener Streak — bleibt sichtbar (echte Daten aus dem Store)
+                BuddyRow(name: "Du", initials: "DU", streak: store.currentStreak,
+                         max: Swift.max(1, store.currentStreak),
+                         badge: store.currentStreak > 0 ? "🔥 dabei" : nil,
+                         isSelf: true, barColor: .ctAccent)
+
+                Divider()
+
+                // Empty State: Noch keine Freund:innen
                 VStack(spacing: 10) {
-                    BuddyRow(name: "Du", initials: "DU", streak: store.currentStreak,
-                             max: maxStreak, badge: "🔥 dabei", isSelf: true, barColor: .ctAccent)
-                    BuddyRow(name: "Anna", initials: "AN", streak: max(2, store.bestStreak - 1),
-                             max: maxStreak, badge: nil, isSelf: false, barColor: .ctKreatin)
-                    BuddyRow(name: "Luis", initials: "LU", streak: max(0, store.currentStreak - 3),
-                             max: maxStreak, badge: nil, isSelf: false, barColor: .ctWasser)
+                    Image(systemName: "person.2.fill")
+                        .font(.system(size: 28))
+                        .foregroundStyle(Color.ctInkTertiary)
+                    Text("Noch keine Freund:innen")
+                        .font(.ctSubheadline.weight(.semibold))
+                    Text("Lade jemanden ein und vergleicht eure Streaks live.")
+                        .font(.caption)
+                        .foregroundStyle(Color.ctInkSecondary)
+                        .multilineTextAlignment(.center)
+                        .frame(maxWidth: .infinity)
+                    Button {
+                        // TODO: invite-flow (folgt in n\u00e4chster Phase \u2014 share-sheet oder contact picker)
+                        Haptics.tap()
+                    } label: {
+                        Label("Freund:in einladen", systemImage: "person.crop.circle.badge.plus")
+                            .font(.ctSubheadline.weight(.semibold))
+                            .padding(.horizontal, 18)
+                            .padding(.vertical, 10)
+                            .background(Color.ctAccent, in: Capsule())
+                            .foregroundStyle(.white)
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.top, 2)
                 }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 6)
             }
         }
     }

@@ -25,6 +25,7 @@ struct ContentView: View {
     @AppStorage("remindersEnabled") private var remindersEnabled: Bool = true
     @AppStorage("appearanceMode") private var appearanceModeRaw: String = AppearanceMode.system.rawValue
     @AppStorage("selectedTab") private var selectedTab = 0
+    @State private var showSettings = false
 
     private var preferredColorScheme: ColorScheme? {
         AppearanceMode(rawValue: appearanceModeRaw)?.preferredColorSchemeOverride
@@ -50,22 +51,36 @@ struct ContentView: View {
     }
 
     private var mainApp: some View {
-        ZStack(alignment: .bottom) {
-            tabContent
-                .toolbar(.hidden, for: .tabBar)
-                .ignoresSafeArea(.container, edges: .bottom)
-                .padding(.bottom, 56)
-
-            FloatingTabBar(selectedTab: $selectedTab)
-                .padding(.bottom, 12)
-        }
-        .onChange(of: scenePhase) { _, newPhase in
-            handleScenePhase(newPhase)
-        }
-        .onChange(of: selectedTab) { _, newTab in
-            handleTabSwitch(to: newTab)
-        }
-        .preferredColorScheme(preferredColorScheme)
+        tabContent
+            .toolbar(.hidden, for: .tabBar)
+            .safeAreaInset(edge: .bottom, spacing: 8) {
+                FloatingTabBar(selectedTab: $selectedTab)
+                    .padding(.horizontal, 12)
+            }
+            .overlay(alignment: .topTrailing) {
+                Button {
+                    Haptics.tap()
+                    showSettings = true
+                } label: {
+                    Image(systemName: "gearshape.fill")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundStyle(Color.ctInkSecondary)
+                        .frame(width: 38, height: 38)
+                        .background(.regularMaterial, in: Circle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Einstellungen öffnen")
+                .padding(.top, 8)
+                .padding(.trailing, 12)
+            }
+            .sheet(isPresented: $showSettings) { SettingsView() }
+            .onChange(of: scenePhase) { _, newPhase in
+                handleScenePhase(newPhase)
+            }
+            .onChange(of: selectedTab) { _, newTab in
+                handleTabSwitch(to: newTab)
+            }
+            .preferredColorScheme(preferredColorScheme)
     }
 
     @ViewBuilder
