@@ -43,7 +43,6 @@ struct HistoryView: View {
                 .padding(.vertical, 16)
             }
         }
-        .sheet(isPresented: $showSettings) { SettingsView() }
     }
 
     private var header: some View {

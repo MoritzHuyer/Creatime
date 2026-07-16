@@ -82,7 +82,6 @@ struct TodayView: View {
             VacationModeSheet()
                 .presentationDetents([.medium, .large])
         }
-        .sheet(isPresented: $showSettings) { SettingsView() }
         .task { await pushLiveActivityUpdate() }
         .onChange(of: store.currentStreak) { _, _ in
             Task { await pushLiveActivityUpdate() }

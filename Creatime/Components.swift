@@ -412,7 +412,7 @@ struct BuddyBattleCard: View {
 
                 // Eigener Streak — bleibt sichtbar (echte Daten aus dem Store)
                 BuddyRow(name: "Du", initials: "DU", streak: store.currentStreak,
-                         max: Swift.max(1, store.currentStreak),
+                         max: Swift.max(1, store.bestStreak),
                          badge: store.currentStreak > 0 ? "🔥 dabei" : nil,
                          isSelf: true, barColor: .ctAccent)
 
