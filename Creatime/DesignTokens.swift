@@ -19,7 +19,11 @@ extension Color {
 
     /// Primary brand accent. Used for streak counter, active tab
     /// pulse, primary button tints.
-    static let ctAccent = Color(lightHex: "#FF7A2F", darkHex: "#FF8A47")
+    /// Akzentfarbe folgt dem in Settings gewählten Theme. Vorher war hier
+    /// Orange hartkodiert — der Theme-Picker sah dadurch aus wie ein
+    /// Feature, hat aber nichts verändert. „Sunset" entspricht ungefähr
+    /// dem bisherigen Orange.
+    static var ctAccent: Color { ThemeManager.shared.tint }
 
     /// Streak flame icon stroke — slightly brighter for icon use.
     static let ctStreakFlame = Color(lightHex: "#FF9500", darkHex: "#FF9F0A")

@@ -271,9 +271,20 @@ struct WasserBar: View {
 struct CalendarCard: View {
     @Environment(CreatineStore.self) private var store
     @State private var displayedMonth = Date()
-    private let calendar = Calendar.current
 
-    private var monthTitle: String { displayedMonth.formatted(.dateTime.month(.wide).year()) }
+    /// Fester deutscher Kalender: Die App ist komplett deutsch — sonst
+    /// zeigt ein englisches Gerät „July 2026" und „M T W T F S S".
+    private let calendar: Calendar = {
+        var cal = Calendar.current
+        cal.locale = Locale(identifier: "de_DE")
+        return cal
+    }()
+
+    private var monthTitle: String {
+        displayedMonth.formatted(
+            .dateTime.month(.wide).year().locale(Locale(identifier: "de_DE"))
+        )
+    }
 
     private var dayCells: [[CalendarDay?]] {
         guard let range = calendar.range(of: .day, in: .month, for: displayedMonth),
@@ -515,7 +526,7 @@ struct BuddyRow: View {
                     if let badge { Text(badge).font(.caption.weight(.semibold)).foregroundStyle(Color.ctAccent) }
                     Spacer()
                     Text("\(streak)").font(.ctSubheadline.weight(.bold))
-                    Text(" Tage").font(.caption.weight(.medium)).foregroundStyle(Color.ctInkSecondary)
+                    Text(streak == 1 ? " Tag" : " Tage").font(.caption.weight(.medium)).foregroundStyle(Color.ctInkSecondary)
                 }
                 Capsule().fill(Color.ctInkTertiary.opacity(0.5)).frame(height: 6)
                     .overlay(GeometryReader { geo in

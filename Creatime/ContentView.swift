@@ -80,6 +80,16 @@ struct ContentView: View {
                     .padding(.horizontal, 12)
             }
             .sheet(isPresented: $showSettings) { SettingsView() }
+            #if DEBUG
+            // Nur für Debug-Builds: erlaubt automatisierten UI-Checks
+            // (Screenshots via simctl), das Settings-Sheet per
+            // Launch-Argument zu öffnen: `-openSettings`.
+            .onAppear {
+                if ProcessInfo.processInfo.arguments.contains("-openSettings") {
+                    showSettings = true
+                }
+            }
+            #endif
             .onChange(of: scenePhase) { _, newPhase in
                 handleScenePhase(newPhase)
             }
