@@ -27,6 +27,8 @@ struct TodayView: View {
 
     @AppStorage("reminderHour") private var reminderHour = 20
     @AppStorage("reminderMinute") private var reminderMinute = 0
+    /// Im Onboarding aus dem Gewicht berechnete Tagesdosis (Richtwert).
+    @AppStorage("creatineDoseGrams") private var creatineDoseGrams = 0
 
     @State private var showVacationSheet = false
     @State private var showSettings = false
@@ -240,25 +242,34 @@ struct TodayView: View {
     //  • erledigt   → grün, deaktiviert, "Heute erledigt ✓"
     //  • pausiert   → orange getönt, deaktiviert, "Heute pausiert"
     private var mainActionButton: some View {
-        Button(action: markAsTaken) {
-            HStack(spacing: 10) {
-                Image(systemName: store.takenToday
-                      ? "checkmark.circle.fill"
-                      : (store.skippedToday ? "pause.circle.fill" : "checkmark.circle"))
-                    .font(.title2.weight(.semibold))
-                Text(store.takenToday
-                     ? "Heute erledigt"
-                     : (store.skippedToday ? "Heute pausiert" : "Kreatin genommen"))
-                    .font(.title3.weight(.bold))
+        VStack(spacing: 8) {
+            Button(action: markAsTaken) {
+                HStack(spacing: 10) {
+                    Image(systemName: store.takenToday
+                          ? "checkmark.circle.fill"
+                          : (store.skippedToday ? "pause.circle.fill" : "checkmark.circle"))
+                        .font(.title2.weight(.semibold))
+                    Text(store.takenToday
+                         ? "Heute erledigt"
+                         : (store.skippedToday ? "Heute pausiert" : "Kreatin genommen"))
+                        .font(.title3.weight(.bold))
+                }
+                .frame(maxWidth: .infinity)
+                .frame(height: 62)
             }
-            .frame(maxWidth: .infinity)
-            .frame(height: 62)
+            .buttonStyle(.borderedProminent)
+            .tint(store.takenToday ? .green : (store.skippedToday ? .orange : .accentColor))
+            .disabled(store.takenToday || store.skippedToday)
+            .controlSize(.large)
+            .accessibilityLabel(store.takenToday ? "Heute bereits erledigt" : "Kreatin als genommen markieren")
+
+            // Dezente, personalisierte Dosis-Zeile (Payoff aus dem Onboarding).
+            if creatineDoseGrams > 0 {
+                Label("Empfohlene Tagesdosis: \(creatineDoseGrams) g Monohydrat", systemImage: "pills.fill")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
         }
-        .buttonStyle(.borderedProminent)
-        .tint(store.takenToday ? .green : (store.skippedToday ? .orange : .accentColor))
-        .disabled(store.takenToday || store.skippedToday)
-        .controlSize(.large)
-        .accessibilityLabel(store.takenToday ? "Heute bereits erledigt" : "Kreatin als genommen markieren")
     }
 
     private var tipStrip: some View {

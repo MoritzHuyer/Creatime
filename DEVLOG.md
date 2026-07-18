@@ -15,6 +15,39 @@ Mehr zur Strategie in [`./BUILDING_IN_PUBLIC.md`](./BUILDING_IN_PUBLIC.md).
 
 ## Letzte Einträge
 
+### 2026-07-18 · Quiz-Onboarding + Konkurrenz-Analyse
+
+**Was passiert ist:**
+
+- **Eine sehr ähnliche App entdeckt** („Creatine Today" im App Store) — poliert,
+  mit Quiz-Onboarding und 29,99 €/Jahr-Abo. Erste Reaktion: „Lohnt sich das noch?"
+- **Antwort: ja.** Konkurrenz validiert den Markt (Leute suchen & zahlen für
+  Kreatin-Tracker). Ich muss sie nicht schlagen — ich brauche einen eigenen Winkel.
+  Creatime hat einen: **Wasser, Stimmung, Buddy-Battle, Foto-Streak** — Sachen,
+  die eine reine Kreatin-App nicht hat. Positionierung: „Mehr als nur Kreatin —
+  und ohne Abo-Genörgel."
+- **Neues Quiz-Onboarding gebaut** — inspiriert vom Funnel-Prinzip, aber
+  BEWUSST kein Klon: eigener heller Indigo-Look statt Orange, eigene Texte,
+  und ein Schritt, den die Konkurrenz nicht hat (Wasserziel).
+  Schritte: Willkommen → Ziel → **Gewicht → personalisierte Dosis** → Training
+  → Erinnerung → Wasserziel → Plan-Zusammenfassung.
+- **Dosis-Rechner** als echtes neues Feature: aus dem Gewicht wird eine
+  Tagesdosis (Richtwert ~0,03 g/kg, gedeckelt 3–5 g) berechnet und dezent auf
+  dem Heute-Tab angezeigt.
+
+**Was ich gelernt habe:**
+
+- **Konkurrenz ist ein Marktbeweis, kein Stoppschild.** Der leere Markt wäre
+  das schlechtere Zeichen.
+- **Nicht kopieren — differenzieren.** Denselben Funnel-Aufbau nutzen, aber mit
+  eigener Identität, sonst bin ich nur ein Abklatsch.
+- **Ein gutes Onboarding ist selbst ein Feature.** Es verbessert Retention und
+  liefert direkt einen Nutzen (die personalisierte Dosis).
+- **Monetarisierung bewusst offen gelassen** — ich kann eh erst mit 18
+  veröffentlichen. Tendenz: einmaliger „Pro-Unlock" statt Mini-Abo.
+
+---
+
 ### 2026-07-18 · v17 „Creatime V2" — Neustart + großes Feature-Update
 
 **Was passiert ist:**
