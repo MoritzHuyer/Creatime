@@ -27,6 +27,8 @@ struct SettingsView: View {
     // (vorher als Footer-Chip auf dem Heute-Tab).
     @AppStorage("reminderHour") private var reminderHour: Int = 20
     @AppStorage("reminderMinute") private var reminderMinute: Int = 0
+    // Auf false setzen → ContentView zeigt wieder das Onboarding.
+    @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
 
     @State private var showVacationSheet = false
     @State private var showSupplementManager = false
@@ -282,6 +284,23 @@ struct SettingsView: View {
                             Spacer()
                             Button("Bearbeiten") { showVacationSheet = true }
                                 .buttonStyle(.bordered)
+                        }
+                    }
+
+                    // MARK: Einführung erneut ansehen
+                    SettingsCard(title: "Einführung", systemImage: "sparkles") {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Du kannst die Willkommens-Einführung (mit Ziel, Dosis-Rechner & Wasserziel) jederzeit noch einmal durchgehen.")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                            Button {
+                                hasCompletedOnboarding = false
+                                dismiss()
+                            } label: {
+                                Label("Einführung erneut ansehen", systemImage: "arrow.counterclockwise")
+                            }
+                            .buttonStyle(.bordered)
                         }
                     }
 
