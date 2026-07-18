@@ -127,7 +127,6 @@
 				AA00000000000000000008 /* Frameworks */,
 				AA00000000000000000009 /* Resources */,
 				AA00000000000000000019 /* Embed Foundation Extensions */,
-				AA00000000000000000041 /* Auto-Push */,
 			);
 			buildRules = (
 			);
@@ -253,27 +252,6 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
-
-/* Begin PBXShellScriptBuildPhase section */
-		AA00000000000000000041 /* Auto-Push */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-			);
-			name = "Auto-Push";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "if ! git remote -v | grep -q origin; then exit 0; fi\ngit add -A\nif git diff --cached --quiet; then exit 0; fi\ngit commit -m \"Auto-commit `date +%H:%M:%S`\"\ngit push origin main 2>/dev/null || true\n";
-		};
-/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		AA00000000000000000007 /* Sources */ = {

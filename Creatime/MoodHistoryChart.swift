@@ -41,9 +41,9 @@ struct MoodHistoryChart: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Label("Stimmung (7 Tage)", systemImage: "face.smiling")
-                .font(.subheadline.bold())
-                .foregroundStyle(.primary)
+            Label("Stimmung · 7 Tage", systemImage: "face.smiling")
+                .font(.headline)
+                .foregroundStyle(.orange)
 
             Chart {
                 ForEach(data) { entry in
@@ -76,9 +76,10 @@ struct MoodHistoryChart: View {
                     }
                 }
             }
-            .frame(height: 110)
+            .frame(height: 120)
         }
-        .padding()
+        .padding(16)
+        .background(Color(.systemBackground), in: RoundedRectangle(cornerRadius: 14))
     }
 
     private func emojiFor(score: Int) -> String {

@@ -1,60 +1,61 @@
 import SwiftUI
 
-// MARK: - Fortschritts-Tab (v15.0 — Clean Rewrite)
+// MARK: - Fortschritts-Tab (v13 — Airy / inline)
 //
-// KOMPLETT NEU GESCHRIEBEN nach User-Wunsch "lösch das fortschritt tab
-// und baue es neu". Grund: 4 v14.x-Versuche haben es nicht geschafft,
-// den horizontalen Swipe-Bug zu entfernen. Diese Version ist minimal:
+// Layout-Philosophie: 8 Sections mit 28pt Atmung statt 22pt Card-Spacing.
+// Inline-Komponenten ohne Glass-Card-Wrapper, eigene Subtle-Tiles für
+// Stat-Rows. Genau EINE inline StreakShareBanner-Definition.
 //
-//   • ScrollView(.vertical) — NICHT generic, explizit vertical.
-//   • VStack(spacing: 20) — keine horizontalen Container.
-//   • Header: nur Streak-Number + Caption.
-//   • Stats: 3 StatTiles in einer HStack OHNE ScrollView-Risiko.
-//   • Insights: einfache Text-Box, OHNE Charts/Annotation/LazyVGrid.
-//   • Buddy + Calendar + Photos: in Sheet-Detail-Views verschoben
-//     (per "Mehr anzeigen"-Button unten).
-//
-// Alles entfernt:
-//   • MoodHistoryChart.swift (im Main-Scroll nicht aufgerufen)
-//   • HistoryCharts.swift (Wasser + Kreatin im Main-Scroll nicht aufgerufen)
-//   • MonthCalendar (in Sheet verschoben)
-//   • PhotoStreakSection (in Sheet verschoben)
-//   • BuddyView (in Sheet verschoben)
-//   • .debugSize() Wrapper (alle 9 entfernt)
-//   • .fixedSize(horizontal: false) (nicht nötig wenn nichts überläuft)
-//
-// Resultat: ein paar weniger Sections, aber JEDE Section ist jetzt
-// maximal intrinsisch-breit ≤ Parent-Breite. Kein Overflow möglich.
+// Reihenfolge:
+//   1. 6er-Stat-Grid 2×3
+//   2. Mood-HistoryChart (inline)
+//   3. StreakShare-Banner (lila Pill, inline defined)
+//   4. Insights (großer Score-Ring + Vergessen am Tag + Wochenvergleich)
+//   5. WaterHistoryChart (inline, bg.clear)
+//   6. CreatineHistoryChart (inline, bg.clear)
+//   7. BuddyView (airySection)
+//   8. MonthCalendar (white tile w/ border)
+//   9. PhotoStreakSection (airySection)
 
 struct HistoryView: View {
-
     @Environment(CreatineStore.self) private var store
     @Environment(WaterStore.self) private var water
+    @Environment(PhotoStreakStore.self) private var photoStore
 
     @State private var showSettings = false
-    @State private var showBuddySheet = false
-    @State private var showCalendarSheet = false
-    @State private var showPhotosSheet = false
-    @State private var showChartsSheet = false
 
     var body: some View {
         NavigationStack {
             ZStack {
                 DynamicBackground()
+                ScrollView(.vertical) {
+                    VStack(alignment: .leading, spacing: 28) {
 
-                ScrollView(.vertical, showsIndicators: true) {
-                    VStack(alignment: .leading, spacing: 24) {
-                        header
-                        statsRow
-                        insightsCard
-                        detailLinksRow
+                        // Überblick
+                        statGrid
 
-                        Spacer(minLength: 32)
+                        // Kalender (nach oben geholt — wichtigster visueller Anker)
+                        sectionHeader("Kalender")
+                        MonthCalendar()
+
+                        // Trends — bewusst auf 2 klare Diagramme reduziert
+                        // (der verwirrende Insights-Block und der mit dem
+                        // Kalender redundante Kreatin-Chart sind entfernt).
+                        sectionHeader("Trends")
+                        WaterHistoryChart()
+                        MoodHistoryChart()
+
+                        // Teilen & Community
+                        sectionHeader("Teilen & Community")
+                        StreakShareBanner()
+                        BuddyView()
+                        PhotoStreakSection()
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 16)
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 32)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
+                .scrollBounceBehavior(.basedOnSize, axes: .horizontal)
             }
             .navigationTitle("Fortschritt")
             .navigationBarTitleDisplayMode(.large)
@@ -69,349 +70,264 @@ struct HistoryView: View {
             }
         }
         .sheet(isPresented: $showSettings) { SettingsView() }
-        .sheet(isPresented: $showBuddySheet) { BuddyView() }
-        .sheet(isPresented: $showCalendarSheet) { MonthCalendarSheet() }
-        .sheet(isPresented: $showPhotosSheet) { PhotoStreakSheet() }
-        .sheet(isPresented: $showChartsSheet) { ChartsSheet() }
     }
 
-    // MARK: - Header (Streak-Hero)
-
-    private var header: some View {
-        VStack(spacing: 6) {
-            Text("\(store.currentStreak)")
-                .font(.system(size: 72, weight: .bold, design: .rounded))
-                .foregroundStyle(.green)
-                .monospacedDigit()
-                .contentTransition(.numericText())
-                .animation(.snappy, value: store.currentStreak)
-            Text("Tage in Folge")
-                .font(.title3.weight(.semibold))
-                .foregroundStyle(.primary)
-            if store.bestStreak > store.currentStreak && store.bestStreak > 0 {
-                Text("Beste: \(store.bestStreak)")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            }
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 8)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(store.currentStreak) Tage Streak in Folge")
+    // Kleine, dezente Abschnitts-Überschrift, damit die Infos gruppiert
+    // wirken statt verstreut.
+    private func sectionHeader(_ title: String) -> some View {
+        Text(title)
+            .font(.title3.weight(.bold))
+            .foregroundStyle(.primary)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.top, 4)
     }
 
-    // MARK: - Stats Row (3 Tiles)
+    // MARK: - 6er Stat-Grid 2×3
 
-    private var statsRow: some View {
-        HStack(spacing: 12) {
-            StatTile(label: "Tage gesamt", value: "\(store.totalDays)", tint: .accentColor)
-            StatTile(label: "30-Tage", value: "\(Int(store.last30DaysRate * 100))%", tint: .blue)
-            StatTile(label: "Score", value: "\(store.consistencyScore)", tint: .indigo)
+    private var statGrid: some View {
+        VStack(spacing: 12) {
+            HStack(spacing: 12) {
+                SimpleStatTile(icon: "flame.fill", tint: .orange,
+                               label: "Aktuelle Streak",
+                               value: "\(store.currentStreak)", suffix: nil)
+                SimpleStatTile(icon: "checkmark.seal.fill", tint: .green,
+                               label: "Beste Streak",
+                               value: "\(store.bestStreak)", suffix: nil)
+                SimpleStatTile(icon: "calendar", tint: Color.accentColor,
+                               label: "Tage gesamt",
+                               value: "\(store.totalDays)", suffix: nil)
+            }
+            HStack(spacing: 12) {
+                SimpleStatTile(icon: "chart.line.uptrend.xyaxis", tint: .indigo,
+                               label: "Letzte 30 Tage",
+                               value: "\(Int(store.last30DaysRate * 100))", suffix: "%")
+                SimpleStatTile(icon: "drop.fill", tint: .cyan,
+                               label: "Ø Wasser (7 Tage)",
+                               value: formatLiters(water.weeklyAverage), suffix: "L")
+                SimpleStatTile(icon: "star.fill", tint: .yellow,
+                               label: "Perfekte Tage",
+                               value: "\(store.perfectDaysLast30)", suffix: nil)
+            }
         }
     }
 
-    // MARK: - Insights Text-Box
-
-    private var insightsCard: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Label("Insights", systemImage: "sparkles")
-                    .font(.headline)
-                    .foregroundStyle(.primary)
-                Spacer()
-            }
-
-            Divider()
-
-            insightRow(label: "Score heute",
-                       value: "\(store.consistencyScore) von 100",
-                       tint: .indigo)
-
-            insightRow(label: "Letzte 30 Tage",
-                       value: "\(Int(store.last30DaysRate * 100))% abgedeckt",
-                       tint: .blue)
-
-            insightRow(label: "Wasser (Ø 7 Tage)",
-                       value: "\(water.weeklyAverage / 1000)L pro Tag",
-                       tint: .cyan)
-
-            insightRow(label: "Wasserziel",
-                       value: "2,5L am Tag",
-                       tint: .cyan)
-        }
-        .padding(16)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 18))
-    }
-
-    private func insightRow(label: String, value: String, tint: Color) -> some View {
-        HStack {
-            Text(label)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-            Spacer()
-            Text(value)
-                .font(.subheadline.weight(.bold))
-                .foregroundStyle(tint)
-                .monospacedDigit()
-        }
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(label): \(value)")
-    }
-
-    // MARK: - Detail-Verweise (Sheet-Buttons)
-
-    private var detailLinksRow: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Mehr anzeigen")
-                .font(.subheadline.bold())
-                .foregroundStyle(.secondary)
-                .padding(.bottom, 4)
-
-            DetailLink(icon: "calendar", title: "Monats-Kalender") {
-                showCalendarSheet = true
-            }
-
-            DetailLink(icon: "chart.bar.xaxis", title: "Charts (Wasser + Mood)") {
-                showChartsSheet = true
-            }
-
-            DetailLink(icon: "person.2.fill", title: "Streak-Battle") {
-                showBuddySheet = true
-            }
-
-            DetailLink(icon: "camera.fill", title: "Foto-Streak") {
-                showPhotosSheet = true
-            }
-        }
+    private func formatLiters(_ ml: Int) -> String {
+        let v = Double(ml) / 1000
+        let s = v.formatted(.number.precision(.fractionLength(0...2)))
+        return s.replacingOccurrences(of: ".", with: ",")
     }
 }
 
-// MARK: - StatTile
+// MARK: - SimpleStatTile (v13 — white tile + subtle shadow / border)
 
-struct StatTile: View {
+struct SimpleStatTile: View {
+    let icon: String
+    let tint: Color
     let label: String
     let value: String
-    let tint: Color
+    let suffix: String?
 
     var body: some View {
-        VStack(spacing: 6) {
-            Text(value)
-                .font(.title.bold())
-                .monospacedDigit()
-                .foregroundStyle(tint)
-                .lineLimit(1)
-                .minimumScaleFactor(0.7)
-            Text(label)
-                .font(.caption2.weight(.medium))
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-                .minimumScaleFactor(0.8)
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 6) {
+                Image(systemName: icon)
+                    .foregroundStyle(tint)
+                    .font(.caption.bold())
+                Text(label)
+                    .font(.caption2.weight(.medium))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+            }
+            HStack(alignment: .firstTextBaseline, spacing: 3) {
+                Text(value)
+                    .font(.system(.title, design: .rounded).weight(.bold))
+                    .foregroundStyle(tint)
+                    .contentTransition(.numericText())
+                    .minimumScaleFactor(0.6)
+                    .lineLimit(1)
+                if let suffix {
+                    Text(suffix)
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                        .lineLimit(1)
+                }
+            }
         }
-        .frame(maxWidth: .infinity, minHeight: 70)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(12)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
+        .background(Color(.systemBackground), in: RoundedRectangle(cornerRadius: 14))
+        .overlay {
+            RoundedRectangle(cornerRadius: 14)
+                .strokeBorder(Color.black.opacity(0.06), lineWidth: 0.5)
+        }
+        .shadow(color: .black.opacity(0.04), radius: 6, x: 0, y: 2)
+        .frame(minHeight: 78, alignment: .topLeading)
     }
 }
 
-// MARK: - DetailLink
+// MARK: - StreakShareBanner (v13 — purple pill, inline defined exactly ONCE)
 
-struct DetailLink: View {
-    let icon: String
-    let title: String
-    let action: () -> Void
+struct StreakShareBanner: View {
+    @Environment(CreatineStore.self) private var store
+
+    private var bestSnapshot: Int { store.bestStreak }
 
     var body: some View {
-        Button(action: action) {
+        Button {
+            Haptics.tapMedium()
+        } label: {
             HStack(spacing: 12) {
-                Image(systemName: icon)
-                    .foregroundStyle(Color.accentColor)
-                    .frame(width: 26)
-                Text(title)
-                    .foregroundStyle(.primary)
+                Image(systemName: "square.and.arrow.up.fill")
+                    .foregroundStyle(.white)
+                    .font(.subheadline.weight(.bold))
+                    .frame(width: 28, height: 28)
+                    .background(.white.opacity(0.2), in: Circle())
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("Streak teilen")
+                        .font(.subheadline.weight(.semibold))
+                    Text("Dein \(store.currentStreak)-Tage-Streak im Bild verschicken.")
+                        .font(.caption2)
+                        .foregroundStyle(.white.opacity(0.85))
+                        .lineLimit(2)
+                        .minimumScaleFactor(0.85)
+                }
                 Spacer()
                 Image(systemName: "chevron.right")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.tertiary)
+                    .foregroundStyle(.white.opacity(0.7))
+                    .font(.caption.bold())
             }
-            .padding(.vertical, 10)
             .padding(.horizontal, 14)
-            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+            .padding(.vertical, 12)
+            .background(
+                LinearGradient(
+                    colors: [Color.indigo, Color.purple],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                ),
+                in: RoundedRectangle(cornerRadius: 14)
+            )
+            .foregroundStyle(.white)
         }
         .buttonStyle(.plain)
+        .accessibilityLabel("Streak-Karte teilen, \(store.currentStreak) Tage in Folge")
     }
 }
 
-// MARK: - Sheet-Container (Lightweight Wrappers)
-//
-// Diese Sheet-Views zeigen jeweils nur den relevanten Sub-Component
-// innerhalb eines Schlanken Sheets. So bleibt der Main-ScrollView
-// schlank und das horizontale-Swipe-Problem kann in den Sub-Views
-// lokal bleiben (oder auch dort nicht — wir testen!).
-
-struct MonthCalendarSheet: View {
-    var body: some View {
-        NavigationStack {
-            MonthCalendar()
-                .padding()
-        }
-    }
-}
-
-struct PhotoStreakSheet: View {
-    var body: some View {
-        NavigationStack {
-            ScrollView(.vertical) {
-                PhotoStreakSection()
-                    .padding()
-            }
-        }
-    }
-}
-
-struct ChartsSheet: View {
-    var body: some View {
-        NavigationStack {
-            ScrollView(.vertical) {
-                VStack(spacing: 16) {
-                    WaterHistoryChart()
-                    Divider()
-                    MoodHistoryChart()
-                }
-                .padding()
-            }
-        }
-    }
-}
-
-#Preview {
-    HistoryView()
-        .environment(CreatineStore())
-        .environment(WaterStore())
-}
-
-// MARK: - MonthCalendar (minimal inline — ausgelagert aus altem HistoryView)
-//
-// v15.0: Diese Struct war inline im alten HistoryView.swift. Beim
-// Complete-Rewrite wurde sie versehentlich nicht migriert. Wir fügen
-// sie wieder minimal ein, damit MonthCalendarSheet() sie aufrufen kann.
-// Bewusst minimal gehalten: KEIN LazyVGrid mit 7-col + 38pt-Cells
-// (das war Überlaufverdächtiger in v13/v14), sondern HStack-basiert
-// mit kleinem festen Cell-Size + Padding-Guard.
-//
-// Architektur: Calendar-Header (Monat + Pfeile) HStack oben, dann
-// 7×7 cells (maximal 49 DayCells) als VStack of HStacks. Jede Cell
-// ist 36pt Circle, garantiert < Parent-Breite auch auf iPhone SE.
+// MARK: - MonthCalendar (clean inline)
 
 struct MonthCalendar: View {
     @Environment(CreatineStore.self) private var store
     @State private var displayedMonth = Date()
-    private let calendar = Calendar.current
+    // Deutscher Kalender: Wochenstart Montag, deutsche Wochentags-Kürzel.
+    private let calendar: Calendar = {
+        var cal = Calendar.current
+        cal.locale = Locale(identifier: "de_DE")
+        return cal
+    }()
+    private let dayColumns = Array(repeating: GridItem(.flexible()), count: 7)
 
-    private var monthTitle: String {
-        displayedMonth.formatted(.dateTime.month(.wide).year())
-    }
-
-    private var dayCells: [[Date?]] {
-        guard let range = calendar.range(of: .day, in: .month, for: displayedMonth),
-              let monthStart = calendar.dateInterval(of: .month, for: displayedMonth)?.start
-        else { return Array(repeating: Array(repeating: nil, count: 7), count: 6) }
-        let leading = (calendar.component(.weekday, from: monthStart) - calendar.firstWeekday + 7) % 7
-        var cells: [Date?] = Array(repeating: nil, count: leading)
-        for offset in 0..<range.count {
-            cells.append(calendar.date(byAdding: .day, value: offset, to: monthStart))
-        }
-        while cells.count < 42 { cells.append(nil) }
-        return stride(from: 0, to: 42, by: 7).map { start in
-            Array(cells[start..<start+7])
-        }
-    }
-
-    private var weekdayLabels: [String] {
-        let s = calendar.veryShortStandaloneWeekdaySymbols
+    private var weekdaySymbols: [String] {
+        let symbols = calendar.veryShortStandaloneWeekdaySymbols
         let first = calendar.firstWeekday - 1
-        return Array(s[first...]) + Array(s[..<first])
+        return Array(symbols[first...]) + Array(symbols[..<first])
+    }
+
+    private var monthCells: [Date?] {
+        guard let monthInterval = calendar.dateInterval(of: .month, for: displayedMonth),
+              let dayCount = calendar.range(of: .day, in: .month, for: displayedMonth)?.count
+        else { return [] }
+        let firstDay = monthInterval.start
+        let weekdayOfFirst = calendar.component(.weekday, from: firstDay)
+        let leadingBlanks = (weekdayOfFirst - calendar.firstWeekday + 7) % 7
+        var cells: [Date?] = Array(repeating: nil, count: leadingBlanks)
+        for offset in 0..<dayCount {
+            cells.append(calendar.date(byAdding: .day, value: offset, to: firstDay))
+        }
+        return cells
     }
 
     var body: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 16) {
             HStack {
-                Button { changeMonth(-1) } label: {
+                Button { changeMonth(by: -1) } label: {
                     Image(systemName: "chevron.left")
                         .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.secondary)
                 }
                 Spacer()
-                Text(monthTitle).font(.headline)
+                Text(displayedMonth, format: .dateTime.month(.wide).year())
+                    .font(.headline)
                 Spacer()
-                Button { changeMonth(1) } label: {
+                Button { changeMonth(by: 1) } label: {
                     Image(systemName: "chevron.right")
                         .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.secondary)
                 }
             }
 
-            HStack {
+            LazyVGrid(columns: dayColumns, spacing: 10) {
                 ForEach(0..<7, id: \.self) { i in
-                    Text(weekdayLabels[i])
+                    Text(weekdaySymbols[i])
                         .font(.caption2.weight(.semibold))
                         .foregroundStyle(.tertiary)
-                        .frame(maxWidth: .infinity)
                 }
-            }
-
-            VStack(spacing: 6) {
-                ForEach(0..<6, id: \.self) { week in
-                    HStack(spacing: 6) {
-                        ForEach(0..<7, id: \.self) { day in
-                            CalendarDayCellView(date: dayCells[week][day])
-                                .frame(maxWidth: .infinity)
-                        }
+                ForEach(Array(monthCells.enumerated()), id: \.offset) { _, cell in
+                    if let day = cell {
+                        DayCell(day: day)
+                    } else {
+                        Color.clear.frame(height: 36)
                     }
                 }
             }
         }
-        .padding(12)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
+        .padding(14)
+        .background(Color(.systemBackground), in: RoundedRectangle(cornerRadius: 14))
     }
 
-    private func changeMonth(_ delta: Int) {
-        if let new = calendar.date(byAdding: .month, value: delta, to: displayedMonth) {
-            withAnimation { displayedMonth = new }
+    private func changeMonth(by value: Int) {
+        if let newMonth = calendar.date(byAdding: .month, value: value, to: displayedMonth) {
+            withAnimation { displayedMonth = newMonth }
         }
     }
 }
 
-/// Einzelner Tag im Monats-Kalender. Bewusst MINI: 32pt-Kreis,
-/// lineLimit(1), minimumScaleFactor(0.7) → garantiert passt in
-/// jede Parent-Spalte (kein Overflow mehr möglich).
-struct CalendarDayCellView: View {
+// MARK: - DayCell
+
+struct DayCell: View {
     @Environment(CreatineStore.self) private var store
-    let date: Date?
+    let day: Date
 
     var body: some View {
-        ZStack {
-            if let date {
-                let taken = store.isTaken(date)
-                let skipped = store.isSkipped(date)
-                let frozen = store.isFrozen(date)
-                let isToday = Calendar.current.isDateInToday(date)
-                let dayNum = Calendar.current.component(.day, from: date)
+        let taken = store.isTaken(day)
+        let skipped = store.isSkipped(day)
+        let frozen = store.isFrozen(day)
+        let isToday = Calendar.current.isDateInToday(day)
+        let isFuture = day > Date() && !isToday
+        let dayNumber = Calendar.current.component(.day, from: day)
 
+        ZStack {
+            Circle()
+                .fill(fillColor(taken: taken, skipped: skipped, frozen: frozen))
+                .frame(width: 30, height: 30)
+            Text("\(dayNumber)")
+                .font(.callout)
+                .fontWeight(taken ? .bold : .regular)
+                .foregroundStyle(textColor(taken: taken, isFuture: isFuture))
+                .minimumScaleFactor(0.7)
+                .lineLimit(1)
+            if isToday {
                 Circle()
-                    .fill(fillColor(taken: taken, skipped: skipped, frozen: frozen))
-                    .frame(width: 32, height: 32)
-                Text("\(dayNum)")
-                    .font(.footnote.weight(taken ? .bold : .regular))
-                    .foregroundStyle(taken ? .white : .primary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
-                if isToday {
-                    Circle()
-                        .strokeBorder(Color.accentColor, lineWidth: 1.5)
-                        .frame(width: 36, height: 36)
-                }
+                    .strokeBorder(Color.accentColor, lineWidth: 1.5)
+                    .frame(width: 34, height: 34)
             }
         }
-        .frame(height: 36)
+        // Feste 38pt-Breite verursachte auf schmalen iPhones horizontalen
+        // Overflow (7 Zellen + Gaps > Bildschirm). maxWidth:.infinity +
+        // aspectRatio lässt die Zelle organisch in die Spalte schrumpfen.
+        .frame(maxWidth: .infinity)
+        .aspectRatio(1, contentMode: .fit)
+        .opacity(isFuture ? 0.5 : 1)
     }
 
     private func fillColor(taken: Bool, skipped: Bool, frozen: Bool) -> Color {
@@ -420,4 +336,15 @@ struct CalendarDayCellView: View {
         if skipped { return .orange }
         return Color(.tertiarySystemFill)
     }
+
+    private func textColor(taken: Bool, isFuture: Bool) -> Color {
+        if taken { return .white }
+        return isFuture ? Color(.tertiaryLabel) : .primary
+    }
+}
+
+#Preview {
+    HistoryView()
+        .environment(CreatineStore())
+        .environment(WaterStore())
 }

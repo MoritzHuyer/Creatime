@@ -24,7 +24,8 @@ struct CreatineDay: Identifiable {
 struct WaterHistoryChart: View {
 
     @Environment(WaterStore.self) private var water
-    let days: Int = 30
+    // 14 statt 30 Tage → deutlich weniger, breitere Balken = besser lesbar.
+    let days: Int = 14
 
     private var data: [WaterDay] {
         let calendar = Calendar.current
@@ -36,8 +37,9 @@ struct WaterHistoryChart: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Wasser (30 Tage)")
+            Label("Wasser · 14 Tage", systemImage: "drop.fill")
                 .font(.headline)
+                .foregroundStyle(.cyan)
 
             Chart {
                 ForEach(data) { item in
@@ -49,15 +51,17 @@ struct WaterHistoryChart: View {
                     .cornerRadius(3)
                 }
 
-                // v14.4: Annotation KOMPLETT entfernt — nicht der allerletzte
-                // Versuch war's wert: 4 bisherige Versuche haben nicht
-                // gegriffen, also räumen wir die wahrscheinlichste
-                // Quelle strukturell weg. Die gestrichelte Linie selbst
-                // kommuniziert das Ziel visuell; ein „Ziel"-Text-Label
-                // war nice-to-have aber kritisch als Overflow-Quelle.
+                // Tagesziel als horizontale Linie.
                 RuleMark(y: .value("Ziel", water.dailyGoal))
                     .foregroundStyle(.secondary)
                     .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 4]))
+                    .annotation(position: .topTrailing, alignment: .trailing) {
+                        Text("Ziel")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                            .padding(.horizontal, 4)
+                            .background(.background.opacity(0.8), in: Capsule())
+                    }
             }
             .chartYAxis {
                 AxisMarks(position: .leading) { value in
@@ -74,7 +78,7 @@ struct WaterHistoryChart: View {
                 // "14.07" für 14. Juli. Bewusst NICHT `month(.narrow)`,
                 // weil das nur einen Buchstaben pro Monat liefert und
                 // mehrdeutig wirkt (J=Juli/Juni/Januar).
-                AxisMarks(values: .stride(by: .day, count: 14)) { value in
+                AxisMarks(values: .stride(by: .day, count: 7)) { value in
                     AxisGridLine()
                     AxisValueLabel {
                         if let date = value.as(Date.self) {
@@ -83,10 +87,10 @@ struct WaterHistoryChart: View {
                     }
                 }
             }
-            .frame(height: 180)
+            .frame(height: 170)
         }
-        .padding()
-        .background(Color.clear)
+        .padding(16)
+        .background(Color(.systemBackground), in: RoundedRectangle(cornerRadius: 14))
     }
 }
 

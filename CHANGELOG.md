@@ -5,6 +5,58 @@ Datums-Format: `YYYY-MM-DD`.
 
 ---
 
+## [v17] — 2026-07-18 · „Creatime V2" — Neustart auf v13-Basis + großes Feature-Update
+
+Nach den v13–v16-Runden war die App verbaut (UI gefallen, Features kaputt).
+Sauberer Neuanfang: der von einem iPhone-Screenrecording als „geliebt"
+identifizierte **v13 „Airy-Layout"-Stand** (`e98fa7c`) wurde zur neuen Basis
+„Creatime V2", darauf 11 einzelne Feature-Commits.
+
+### Heute-Tab
+- „Kreatin genommen" als großer, prominenter Haupt-Button ganz oben
+- Kompakteres Moodboard (kleinere Emojis, keine Labels)
+- Wasser: **Ziel-Leiste** (voll = 100 % → grün) + Prozentanzeige + Mengen-Tipp
+- Reminder-Zeile in die Einstellungen verschoben
+
+### Sounds (komplett neu)
+- Harte System-Sounds (`AudioServicesPlaySystemSound`, „Heavy Punch") ersetzt
+  durch **selbst synthetisierte, weiche Töne** (PCM-WAV im Speicher,
+  `AVAudioPlayer`, `masterVolume`-gesteuert)
+- Abhaken = sanfter Zwei-Ton, Ziel erreicht = C-E-G-Arpeggio, Freeze = Abstieg
+- Audio-Session `.ambient` (respektiert Lautlos-Schalter), weichere Haptik
+- Sound-Themen-Auswahl entfernt
+
+### Gamification
+- **Meilenstein-Overlay** bei 3/7/14/30/60/100 Tagen (Emoji + Titel + Chime +
+  Konfetti); normales Abhaken bleibt dezent
+
+### Widget
+- Übernimmt die gewählte **Theme-Farbe** (via App Group), zeigt Wasser-% und
+  grünen „Ziel erreicht"-Zustand (`Shared/ThemeAccent.swift`)
+
+### Supplements (neu)
+- Optionale Checkliste neben Kreatin (`SupplementStore`, App Group, JSON)
+- Eigenes Verwaltungs-Sheet (`SupplementManagerSheet`) + 14 Vorlagen
+- Einstellungen: Wasserziel-Stepper + Erinnerungszeit-Picker
+
+### Fortschritt-Tab (aufgeräumt)
+- Verwirrenden Insights-Block (Score-Ring / „Vergessen am Tag" /
+  Wochenvergleich) und redundanten Kreatin-Chart entfernt
+- Trends = **2 klare Diagramme** (Wasser 14 Tage + Stimmung 7 Tage)
+- Gruppierung: Überblick → Kalender → Trends → Teilen & Community
+
+### Bugfixes / Lokalisierung
+- App-weit `Locale de_DE` (Kalender „Juli", deutsche Wochentage, DatePicker)
+- Sound-Toggle wirkt jetzt · Wasser aus Widget/Siri erscheint sofort
+- Wochenschnitt teilt laufende Woche korrekt · seitliches Scrollen behoben
+  (feste Zell-Breiten → `maxWidth:.infinity + aspectRatio`)
+
+### Repo
+- Entwickelt in separatem Repo `Creatime-V2` (privat), hier als großes Update
+  auf `main` übernommen
+
+---
+
 ## [v12] — 2026-07-15 · v7 Glass-Card UI-Revert + Beta-Label + V1-Launch-Checklist
 
 v11 Bold Sports-App UI war zu cluttered (88pt Hero-Streak, Glow-Progress, Mesh-Background). Komplett-Revert auf v7 Glass-Card-Layout — das ist die Variante, die auf dem iPhone schon gefallen hat. Darkmode-Schutz (DynamicBackground + mode-aware LiquidGlass) bleibt erhalten, sonst kommt der matschige Indigo-Gradient zurück.

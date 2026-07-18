@@ -1,4 +1,5 @@
 import SwiftUI
+import WidgetKit
 
 // MARK: - Theme-System
 //
@@ -90,6 +91,10 @@ final class ThemeManager {
     private(set) var theme: AppTheme = .indigo {
         didSet {
             UserDefaults.standard.set(theme.rawValue, forKey: themeKey)
+            // Zusätzlich in die App Group spiegeln, damit das Widget
+            // (eigener Prozess) die gewählte Akzentfarbe übernehmen kann.
+            SharedDefaults.store.set(theme.rawValue, forKey: themeKey)
+            WidgetCenter.shared.reloadAllTimelines()
         }
     }
 
@@ -100,6 +105,8 @@ final class ThemeManager {
            let t = AppTheme(rawValue: raw) {
             self.theme = t
         }
+        // Beim Start einmal in die App Group spiegeln (falls noch nie gesetzt).
+        SharedDefaults.store.set(theme.rawValue, forKey: themeKey)
     }
 
     /// Wechsel direkt (z.B. aus Settings-Picker).
@@ -109,45 +116,6 @@ final class ThemeManager {
 
     /// Tint-Color für den Root-View (`ContentView.tint(...)`).
     var tint: Color { theme.primary }
-}
-
-// MARK: - Appearance-Modus (Light / Dark / Auto)
-//
-// v14.2 — explizite Auswahl zwischen System-Default, Hell- und Dunkel-Modus.
-// Wir spiegeln den Wert in @AppStorage(\"appearanceMode\") und wenden
-// ihn in ContentView als `.preferredColorScheme(...)` an.
-enum AppearanceMode: String, CaseIterable, Identifiable {
-    case system
-    case light
-    case dark
-
-    var id: String { rawValue }
-
-    var displayName: String {
-        switch self {
-        case .system: return "Auto"
-        case .light:  return "Hell"
-        case .dark:   return "Dunkel"
-        }
-    }
-
-    var symbol: String {
-        switch self {
-        case .system: return "circle.lefthalf.filled"
-        case .light:  return "sun.max.fill"
-        case .dark:   return "moon.fill"
-        }
-    }
-
-    /// Mapping auf SwiftUI's `ColorScheme?`. `.unspecified` ist privat,
-    /// stattdessen setzen wir `nil` (= „dem System folgen\").
-    var preferredColorSchemeOverride: ColorScheme? {
-        switch self {
-        case .system: return nil
-        case .light:  return .light
-        case .dark:   return .dark
-        }
-    }
 }
 
 // MARK: - Color(hex:) Initializers

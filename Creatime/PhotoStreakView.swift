@@ -174,9 +174,9 @@ private struct PhotoThumb: View {
                         )
                 }
             }
-            // v14.1: fixed 100×100 frame caused horizontal overflow on
-            // narrow phones; replaced with maxWidth:.infinity + aspectRatio
-            // 1 so thumbnails scale to fit each LazyVGrid column.
+            // Feste 100pt-Breite verursachte horizontalen Overflow in der
+            // 3-Spalten-Grid auf schmalen iPhones — maxWidth:.infinity +
+            // aspectRatio lässt die Kachel in ihren Slot schrumpfen.
             .frame(maxWidth: .infinity)
             .aspectRatio(1, contentMode: .fill)
             .clipShape(RoundedRectangle(cornerRadius: 12))

@@ -3,16 +3,9 @@ import UserNotifications
 
 // NotificationManager — kümmert sich um alles rund um lokale Erinnerungen.
 // „Lokal" heißt: direkt auf dem iPhone geplant — kein Server, kein Net.
-//
-// v14 (NEU): Nag-Reminders — wenn die Erinnerungs-Zeit vorbei ist und
-// heute noch nicht bestätigt wurde, schickt die App zusätzlich
-// 3 zufällig verteilte Erinnerungen bis 22 Uhr. Sobald der User
-/// das Kreatin markiert (TodayView.markAsTaken), werden ALLE
-/// pending Notifications entfernt (inkl. Nags).
 struct NotificationManager {
 
-    // MARK: - Permission
-
+    /// Fragt den Nutzer um Erlaubnis.
     static func requestPermission() {
         UNUserNotificationCenter.current().requestAuthorization(
             options: [.alert, .sound, .badge]
@@ -23,17 +16,7 @@ struct NotificationManager {
         }
     }
 
-    /// Liefert den aktuellen Push-Authorization-Status. Wird vom
-    /// SettingsView genutzt, um „Berechtigung anfragen" vs. „Berechtigung
-    /// abgelehnt — in iOS-Einstellungen aktivieren" zu unterscheiden.
-    static func currentAuthorizationStatus() async -> UNAuthorizationStatus {
-        await UNUserNotificationCenter.current()
-            .notificationSettings()
-            .authorizationStatus
-    }
-
-    // MARK: - Compat Single Reminder
-
+    /// Alte Single-Reminder-Logik (Compatibility).
     static func rescheduleReminders(takenToday: Bool, hour: Int, minute: Int) {
         let center = UNUserNotificationCenter.current()
         center.removeAllPendingNotificationRequests()
@@ -67,48 +50,49 @@ struct NotificationManager {
         scheduleWeeklyPhotoReminder()
     }
 
-    // MARK: - Smart Reminders + Nag-Reminders (v14)
-
-    /// Plant ALLE Kreatin-Reminders in einem Rutsch:
-    ///   1) Foto-Wochen-Reminder (immer, unabhängig vom Toggle)
-    ///   2) PRIMARY pro Tag (typische Stunde) + BACKUP-Slots (Median ± 2h)
-    ///   3) NAG-Reminders — 3 zufällige „Stupser" zwischen der primären
-    ///      Reminder-Zeit und 22:00, NUR wenn `takenToday=false`.
-    ///      Jeder Nag hat einen eigenen eindeutigen Identifier pro Tag
-    ///      (= „creatime-nag-{dayKey}-{i}"), damit er beim nächsten
-    ///      reschedule-Aufruf sauber ersetzt wird.
+    /// SMART REMINDERS — neu in v3.
     ///
-    /// - Parameter:
-    ///   - remindersEnabled: false → nur Foto-Reminder, **kein** Kreatin-Scheduling.
+    /// Pro Tag: ein PRIMARY-Reminder (typische Stunde) + N-1 BACKUP-Reminder
+    /// (Median ± 2 h). Jedes Reminder hat seinen EIGENEN Past-Skip-Check,
+    /// damit Slots, deren Uhrzeit noch in der Zukunft liegt, IMMER geplant
+    /// werden, auch wenn primary-Stunde bereits vorbei ist.
+    /// Wichtig: Foto-Wochen-Reminder wird synchron wieder hinzugefügt
+    /// direkt nach `removeAllPendingNotificationRequests()` — kein async
+    /// Race mehr.
     static func rescheduleSmartReminders(
         takenToday: Bool,
         suggestedHours: [Int]?,
         fallbackHour: Int = 20,
-        fallbackMinute: Int = 0,
-        remindersEnabled: Bool = true
+        fallbackMinute: Int = 0
     ) {
         let center = UNUserNotificationCenter.current()
+
+        // 1) ALLES löschen (auch Foto-Reminder — wir fügen ihn unten wieder hinzu).
         center.removeAllPendingNotificationRequests()
+
+        // 2) Foto-Reminder SOFORT wieder hinzufügen (idempotent — gleicher
+        // Identifier wird im NotificationCenter ersetzt, nicht dupliziert).
         scheduleWeeklyPhotoReminder()
 
-        guard remindersEnabled else { return }
+        // 3) Wenn keine Heuristik da → klassischer Single-Reminder.
+        guard let hours = suggestedHours, !hours.isEmpty else {
+            rescheduleReminders(
+                takenToday: takenToday,
+                hour: fallbackHour,
+                minute: fallbackMinute
+            )
+            return
+        }
 
         let calendar = Calendar.current
         let now = Date()
-
-        let primaryHour: Int
-        let backupHours: [Int]
-        if let hours = suggestedHours, !hours.isEmpty {
-            primaryHour = hours.first ?? fallbackHour
-            backupHours = Array(hours.dropFirst())
-        } else {
-            primaryHour = fallbackHour
-            backupHours = []
-        }
+        let primaryHour = hours.first ?? fallbackHour
+        let backupHours = Array(hours.dropFirst())
 
         for dayOffset in 0..<7 {
             guard let day = calendar.date(byAdding: .day, value: dayOffset, to: now) else { continue }
 
+            // 1) PRIMARY-Reminder — eigener Past-Skip.
             var priComps = calendar.dateComponents([.year, .month, .day], from: day)
             priComps.hour = primaryHour
             priComps.minute = 0
@@ -127,6 +111,7 @@ struct NotificationManager {
                 ))
             }
 
+            // 2) BACKUP-Reminder — jeder eigene Past-Skip (KRITISCH).
             for (i, hour) in backupHours.enumerated() {
                 var backupComps = calendar.dateComponents([.year, .month, .day], from: day)
                 backupComps.hour = hour
@@ -145,85 +130,6 @@ struct NotificationManager {
                     trigger: UNCalendarNotificationTrigger(dateMatching: backupComps, repeats: false)
                 ))
             }
-        }
-
-        // Nag-Reminders NUR für heute und NUR wenn noch nicht genommen.
-        if !takenToday {
-            scheduleNagReminders(primeHour: primaryHour, untilHour: 22)
-        }
-    }
-
-    /// 3 zufällig verteilte „Nag"-Erinnerungen zwischen der primären
-    /// Reminder-Stunde und `untilHour` (Default 22 Uhr).
-    /// Verwendet KEINE UNCalendarNotificationTrigger.repeats — die Nags
-    /// sind einmal pro Tag, mit eindeutigem dayKey-Identifier, damit
-    /// rescheduleSmartReminders sie bei einer späteren Einnahme sauber
-    /// entfernen kann.
-    ///
-    /// - Es muss mindestens ein ~10-min-Fenster zwischen `startDate` und
-    ///   `endDate` geben, sonst wird nichts geplant (sonst würden alle
-    ///   3 Nags auf den gleichen Zeitpunkt fallen).
-    static func scheduleNagReminders(
-        primeHour: Int,
-        untilHour: Int = 22,
-        today: Date = Date()
-    ) {
-        let center = UNUserNotificationCenter.current()
-        let calendar = Calendar.current
-        let now = Date()
-        let todayKey = DayKey.string(for: today)
-
-        // Start = max(now, primeHour:00)
-        var primeComps = calendar.dateComponents([.year, .month, .day], from: today)
-        primeComps.hour = primeHour
-        primeComps.minute = 0
-        guard let primeFireDate = calendar.date(from: primeComps) else { return }
-        let startDate = max(now, primeFireDate)
-
-        // Ende = today at untilHour:00
-        var endComps = calendar.dateComponents([.year, .month, .day], from: today)
-        endComps.hour = untilHour
-        endComps.minute = 0
-        guard let endDate = calendar.date(from: endComps),
-              endDate > startDate else { return }
-
-        let windowSeconds = endDate.timeIntervalSince(startDate)
-        guard windowSeconds > 600 else { return } // < 10 min — skip nag
-
-        // Drei ~gleichmäßig verteilte Positionen im Fenster + Random-Jitter.
-        // Wir rotieren durch leicht variierende Texte, damit es nicht
-        // „dieselbe Nachricht 3×" wirkt.
-        let positions: [Double] = [0.30, 0.60, 0.85]
-        let nagVariants: [(title: String, body: String)] = [
-            ("💊 Kurz checken?", "Hast du dein Kreatin heute schon genommen? Lass die Streak nicht abreißen."),
-            ("⏰ Sanfter Stupser", "Eine kleine Erinnerung — dein Tagesziel wartet."),
-            ("🔔 Letzte Chance heute", "Vor dem Schlafengehen — noch nicht eingenommen?"),
-        ]
-
-        for (i, fraction) in positions.enumerated() {
-            // ±10 Min Jitter, damit die Uhrzeiten bei mehreren Tagen nicht
-            // exakt identisch wirken.
-            let jitter = TimeInterval.random(in: -600 ... 600)
-            let fireDate = startDate.addingTimeInterval(windowSeconds * fraction + jitter)
-            guard fireDate > now, fireDate <= endDate else { continue }
-
-            let comps = calendar.dateComponents(
-                [.year, .month, .day, .hour, .minute], from: fireDate
-            )
-
-            let content = UNMutableNotificationContent()
-            let variant = nagVariants[i % nagVariants.count]
-            content.title = variant.title
-            content.body = variant.body
-            content.sound = .default
-            content.threadIdentifier = "creatime-nags"
-
-            let trigger = UNCalendarNotificationTrigger(dateMatching: comps, repeats: false)
-            center.add(UNNotificationRequest(
-                identifier: "creatime-nag-\(todayKey)-\(i)",
-                content: content,
-                trigger: trigger
-            ))
         }
     }
 

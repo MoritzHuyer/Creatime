@@ -11,6 +11,7 @@ struct CreatimeApp: App {
     @State private var photoStore = PhotoStreakStore()
     @State private var sounds = SoundsManager()
     @State private var buddy = BuddySystem()
+    @State private var supplements = SupplementStore()
 
     /// ThemeManager als Singleton injiziert. Wir hängen ihn hier als
     /// @State ein, damit SwiftUI beobachtet, wenn der User in Settings
@@ -33,7 +34,13 @@ struct CreatimeApp: App {
                 .environment(photoStore)
                 .environment(sounds)
                 .environment(buddy)
+                .environment(supplements)
                 .environment(theme)
+                // App ist komplett deutsch: erzwingt deutsche Datums-,
+                // Wochentags- und Zahlenformate in ALLEN SwiftUI-Texten
+                // (Kalender „Juli", Charts, DatePicker) — unabhängig von
+                // der System-Sprache des Geräts/Simulators.
+                .environment(\.locale, Locale(identifier: "de_DE"))
                 // Theme-Tint: ersetzt Color.accentColor system-weit für
                 // ALLE Kinder. .preferredColorScheme würde nur Light/Dark
                 // wechseln — wir brauchen ein custom Akzent.

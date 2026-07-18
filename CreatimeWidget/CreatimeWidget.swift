@@ -63,10 +63,23 @@ struct CreatimeProvider: TimelineProvider {
 
 struct CreatimeWidgetView: View {
     @Environment(\.widgetFamily) private var family
+    @Environment(\.colorScheme) private var colorScheme
     let entry: CreatimeEntry
 
     private var waterProgress: Double {
         min(1.0, Double(entry.waterML) / Double(entry.waterGoalML))
+    }
+
+    private var waterGoalReached: Bool { entry.waterML >= entry.waterGoalML }
+
+    private var waterPercent: Int { Int((waterProgress * 100).rounded()) }
+
+    /// Akzentfarbe = das in der App gewählte Theme (aus der App Group).
+    private var accent: Color {
+        ThemeAccent.color(
+            forRawValue: SharedDefaults.store.string(forKey: "themeRaw"),
+            dark: colorScheme == .dark
+        )
     }
 
     private var waterLitersText: String {
@@ -88,21 +101,30 @@ struct CreatimeWidgetView: View {
     /// Das kleine quadratische Home-Screen-Widget (KEIN Button(intent:) —
     /// das macht die interaktive Variante in CreatimeInteractiveWidget).
     private var small: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 6) {
             HStack(spacing: 4) {
                 Text("🔥").font(.title2)
                 Text("\(entry.streak)")
-                    .font(.system(size: 36, weight: .bold, design: .rounded))
+                    .font(.system(size: 38, weight: .bold, design: .rounded))
+                    .foregroundStyle(accent)
             }
             Text(entry.takenToday ? "Heute erledigt ✓" : "Noch offen!")
                 .font(.caption.bold())
                 .foregroundStyle(entry.takenToday ? .green : .orange)
 
+            Spacer(minLength: 0)
+
+            HStack {
+                Label("\(waterLitersText)", systemImage: "drop.fill")
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Text("\(waterPercent)%")
+                    .font(.caption2.weight(.bold))
+                    .foregroundStyle(waterGoalReached ? .green : accent)
+            }
             ProgressView(value: waterProgress)
-                .tint(.blue)
-            Text("\(waterLitersText) Wasser")
-                .font(.caption2)
-                .foregroundStyle(.secondary)
+                .tint(waterGoalReached ? .green : accent)
         }
         .containerBackground(.fill.tertiary, for: .widget)
     }
@@ -114,7 +136,8 @@ struct CreatimeWidgetView: View {
                 Text("🔥").font(.largeTitle)
                 Text("\(entry.streak)")
                     .font(.system(size: 40, weight: .bold, design: .rounded))
-                Text("Tage in Folge")
+                    .foregroundStyle(accent)
+                Text(entry.streak == 1 ? "Tag in Folge" : "Tage in Folge")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }
@@ -129,11 +152,17 @@ struct CreatimeWidgetView: View {
                 .font(.subheadline.bold())
                 .foregroundStyle(entry.takenToday ? .green : .primary)
 
+                HStack {
+                    Label("\(waterLitersText) Wasser", systemImage: "drop.fill")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Text("\(waterPercent)%")
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(waterGoalReached ? .green : accent)
+                }
                 ProgressView(value: waterProgress)
-                    .tint(.blue)
-                Label("\(waterLitersText) Wasser", systemImage: "drop.fill")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .tint(waterGoalReached ? .green : accent)
             }
         }
         .containerBackground(.fill.tertiary, for: .widget)

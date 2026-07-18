@@ -15,6 +15,62 @@ Mehr zur Strategie in [`./BUILDING_IN_PUBLIC.md`](./BUILDING_IN_PUBLIC.md).
 
 ## Letzte Einträge
 
+### 2026-07-18 · v17 „Creatime V2" — Neustart + großes Feature-Update
+
+**Was passiert ist:**
+
+Nach den v13–v16-Runden (viel mit einem KI-Tool umgebaut) war die App für
+mich verbaut: die UI war „gefallen", viele Features funktionierten nicht mehr
+so, wie sie sollten, und ein „bitte nur ein paar Sachen fixen" endete jedes
+Mal in einem kompletten UI-Umbau. Also: **sauberer Neuanfang.**
+
+- **Ausgangspunkt gefunden über ein Handy-Screenrecording.** Auf meinem iPhone
+  lief noch die Version, die mir gefiel. Aus dem Video wurde Frame für Frame
+  klar: das war der **v13 „Airy-Layout"-Stand** (Commit `e98fa7c`) — luftiges
+  Layout, Indigo-Akzent, Mood-Picker, Tipp-des-Tages. Genau den habe ich als
+  saubere Basis für **„Creatime V2"** genommen.
+- **Danach Schritt für Schritt aufgebaut, jede Änderung ein eigener Commit,**
+  damit nie wieder eine ganze UI „wegrutscht".
+
+**Was neu/besser ist:**
+
+- **Heute-Tab:** „Kreatin genommen" ist jetzt der große Haupt-Button ganz oben.
+  Moodboard kompakter. Wasser bekommt eine **Ziel-Leiste** (voll = 100 %,
+  wird grün) + Prozentanzeige + Mengen-Tipp.
+- **Sounds komplett neu:** Der harte iOS-System-„Punch" (das nervige „Ticken",
+  bei dem man die Lautstärke nicht regeln kann) ist raus. Ich **synthetisiere
+  jetzt eigene, weiche Töne** (PCM im Speicher, `AVAudioPlayer`) mit voller
+  Lautstärke-Kontrolle. Abhaken = sanfter Zwei-Ton, Ziel erreicht = kleines
+  C-E-G-Glöckchen. Respektiert den Lautlos-Schalter.
+- **Meilenstein-Feiern:** Bei 7/30/100 Tagen ein hereinfederndes Feier-Overlay
+  mit Emoji, Titel und Motivationszeile + Chime + Konfetti.
+- **Widget poliert:** übernimmt jetzt die gewählte Theme-Farbe, zeigt Wasser-%
+  und einen grünen „Ziel erreicht"-Zustand.
+- **Mehrere Supplements:** neben Kreatin (bleibt der Held) eine optionale
+  Checkliste. Eigener Verwaltungs-Bereich in den Einstellungen + 14 Vorlagen.
+- **Fortschritt aufgeräumt:** der verwirrende „Trends"-Block (Score-Ring,
+  „Vergessen am Tag", Wochenvergleich) ist weg. Trends = 2 klare Diagramme
+  (Wasser 14 Tage + Stimmung 7 Tage), gruppiert in Überblick → Kalender →
+  Trends → Community.
+- **Deutsch-Fix + Bugfixes:** Kalender/Wochentage fest deutsch, Sound-Toggle
+  wirkt, Wasser aus Widget/Siri erscheint sofort in der App, Wochenschnitt
+  korrekt, seitliches Scrollen im Fortschritt-Tab behoben.
+
+**Was ich gelernt habe:**
+
+- **Wenn ein Umbau die App verschlimmert, ist der mutigste Schritt der Reset.**
+  Nicht immer weiter draufpatchen — zurück zum letzten Stand, der sich richtig
+  angefühlt hat, und von dort sauber aufbauen.
+- **Ein Screenrecording ist eine Spezifikation.** Der beste „Design-Brief" war
+  einfach das Video der Version, die mir gefiel.
+- **Ein Commit pro Änderung = Angstfreiheit.** Weil jeder Schritt einzeln
+  rückrollbar ist, traue ich mich, größere Sachen umzubauen.
+- **System-Sounds sind eine Sackgasse, wenn man Lautstärke will.** Eigene Töne
+  zu synthetisieren war weniger Aufwand als gedacht und löst das Problem an
+  der Wurzel.
+
+---
+
 ### 2026-07-15 · v12 UI-Revert auf v7 + Beta-Label + V1-Checklist
 
 **Was diese Woche passiert ist:**
