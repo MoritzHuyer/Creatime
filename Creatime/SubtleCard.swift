@@ -1,4 +1,19 @@
 import SwiftUI
+import UIKit
+
+// MARK: - Karten-Oberfläche (modus-abhängig)
+
+extension Color {
+    /// Oberfläche für Karten (Stat-Kacheln, Kalender, Charts), konsistent
+    /// mit `airySection()`. Im Dark Mode ein weiches Dunkelgrau (#1C1F26)
+    /// statt Reinschwarz — so heben sich die Karten vom dunklen Hintergrund
+    /// ab (genau wie die Buddy-Karte). Im Light Mode schlicht Weiß.
+    static let ctCardSurface = Color(UIColor { trait in
+        trait.userInterfaceStyle == .dark
+            ? UIColor(red: 0x1C / 255.0, green: 0x1F / 255.0, blue: 0x26 / 255.0, alpha: 1)
+            : UIColor.white
+    })
+}
 
 // MARK: - Airy Section Modifier (v13)
 //

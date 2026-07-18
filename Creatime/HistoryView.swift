@@ -156,7 +156,7 @@ struct SimpleStatTile: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(12)
-        .background(Color(.systemBackground), in: RoundedRectangle(cornerRadius: 14))
+        .background(Color.ctCardSurface, in: RoundedRectangle(cornerRadius: 14))
         .overlay {
             RoundedRectangle(cornerRadius: 14)
                 .strokeBorder(Color.black.opacity(0.06), lineWidth: 0.5)
@@ -282,7 +282,7 @@ struct MonthCalendar: View {
             }
         }
         .padding(14)
-        .background(Color(.systemBackground), in: RoundedRectangle(cornerRadius: 14))
+        .background(Color.ctCardSurface, in: RoundedRectangle(cornerRadius: 14))
     }
 
     private func changeMonth(by value: Int) {

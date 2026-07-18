@@ -211,7 +211,7 @@ struct NextAchievementPill: View {
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 12)
-        .background(Color(.systemBackground), in: RoundedRectangle(cornerRadius: 14))
+        .background(Color.ctCardSurface, in: RoundedRectangle(cornerRadius: 14))
         .overlay {
             RoundedRectangle(cornerRadius: 14)
                 .strokeBorder(Color.black.opacity(0.06), lineWidth: 0.5)
@@ -245,7 +245,7 @@ struct BadgeTile: View {
         .frame(maxWidth: .infinity, minHeight: 100)
         .padding(.vertical, 10)
         .padding(.horizontal, 6)
-        .background(Color(.systemBackground), in: RoundedRectangle(cornerRadius: 14))
+        .background(Color.ctCardSurface, in: RoundedRectangle(cornerRadius: 14))
         .overlay {
             RoundedRectangle(cornerRadius: 14)
                 .strokeBorder(Color.black.opacity(unlocked ? 0.06 : 0.04), lineWidth: 0.5)

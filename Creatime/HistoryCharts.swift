@@ -90,7 +90,7 @@ struct WaterHistoryChart: View {
             .frame(height: 170)
         }
         .padding(16)
-        .background(Color(.systemBackground), in: RoundedRectangle(cornerRadius: 14))
+        .background(Color.ctCardSurface, in: RoundedRectangle(cornerRadius: 14))
     }
 }
 

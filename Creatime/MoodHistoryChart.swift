@@ -79,7 +79,7 @@ struct MoodHistoryChart: View {
             .frame(height: 120)
         }
         .padding(16)
-        .background(Color(.systemBackground), in: RoundedRectangle(cornerRadius: 14))
+        .background(Color.ctCardSurface, in: RoundedRectangle(cornerRadius: 14))
     }
 
     private func emojiFor(score: Int) -> String {
