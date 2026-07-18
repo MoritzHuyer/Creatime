@@ -527,6 +527,38 @@ final class CreatineStore {
         return takenDays.filter { $0 >= cutoffKey }.count
     }
 
+    // MARK: - Kreatin-Sättigung
+    //
+    // Physiologisches Modell (vereinfacht, motivierend): Ohne Ladephase sind
+    // die Muskel-Kreatinspeicher nach ~28 Tagen konstanter Einnahme gesättigt.
+    // Wir zählen die tatsächlichen Einnahme-Tage der letzten 28 Tage — ein
+    // einzelner verpasster Tag lässt die Anzeige also nicht einbrechen, viele
+    // Aussetzer verzögern die Sättigung aber realistisch.
+
+    static let saturationWindowDays = 28
+
+    /// Einnahme-Tage (nur `taken`) im Sättigungs-Fenster.
+    private var takenCountInSaturationWindow: Int {
+        let calendar = Calendar.current
+        return (0..<Self.saturationWindowDays).filter { offset in
+            guard let day = calendar.date(byAdding: .day, value: -offset, to: Date()) else { return false }
+            return takenDays.contains(DayKey.string(for: day))
+        }.count
+    }
+
+    /// Sättigungsgrad der Speicher: 0.0–1.0.
+    var creatineSaturation: Double {
+        min(1.0, Double(takenCountInSaturationWindow) / Double(Self.saturationWindowDays))
+    }
+
+    /// Geschätzte Tage bis zur vollen Sättigung (bei täglicher Einnahme ab jetzt).
+    var daysUntilSaturated: Int {
+        max(0, Self.saturationWindowDays - takenCountInSaturationWindow)
+    }
+
+    /// Speicher voll?
+    var isSaturated: Bool { daysUntilSaturated == 0 }
+
     // MARK: - Streak-Schutz (1 Pause pro Woche)
 
     /// Wie oft in der aktuellen ISO-Woche schon pausiert (skip-typisch) wurde.

@@ -31,6 +31,9 @@ struct HistoryView: View {
                 ScrollView(.vertical) {
                     VStack(alignment: .leading, spacing: 28) {
 
+                        // Kreatin-Sättigung (Highlight — nutzt vorhandene Daten)
+                        SaturationCard()
+
                         // Überblick
                         statGrid
 
@@ -115,6 +118,67 @@ struct HistoryView: View {
         let v = Double(ml) / 1000
         let s = v.formatted(.number.precision(.fractionLength(0...2)))
         return s.replacingOccurrences(of: ".", with: ",")
+    }
+}
+
+// MARK: - Sättigungs-Karte
+//
+// Zeigt den Sättigungsgrad der Muskel-Kreatinspeicher als Ring + Status.
+// Nutzt `CreatineStore.creatineSaturation` / `.daysUntilSaturated`.
+struct SaturationCard: View {
+    @Environment(CreatineStore.self) private var store
+    @Environment(ThemeManager.self) private var theme
+
+    private var pct: Int { Int((store.creatineSaturation * 100).rounded()) }
+
+    private var statusText: String {
+        if store.isSaturated { return "Speicher voll! 💪" }
+        let d = store.daysUntilSaturated
+        return "Voll in \(d) \(d == 1 ? "Tag" : "Tagen")"
+    }
+
+    var body: some View {
+        HStack(spacing: 18) {
+            // Ring
+            ZStack {
+                Circle()
+                    .stroke(Color(.tertiarySystemFill), lineWidth: 9)
+                Circle()
+                    .trim(from: 0, to: max(0.001, store.creatineSaturation))
+                    .stroke(
+                        store.isSaturated ? Color.green : theme.tint,
+                        style: StrokeStyle(lineWidth: 9, lineCap: .round)
+                    )
+                    .rotationEffect(.degrees(-90))
+                    .animation(.snappy, value: store.creatineSaturation)
+                VStack(spacing: 0) {
+                    Text("\(pct)%")
+                        .font(.system(size: 22, weight: .bold, design: .rounded))
+                        .foregroundStyle(store.isSaturated ? .green : theme.tint)
+                        .contentTransition(.numericText())
+                }
+            }
+            .frame(width: 84, height: 84)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Kreatin-Sättigung")
+                    .font(.headline)
+                Text(statusText)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(store.isSaturated ? .green : theme.tint)
+                Text("Nach ~28 Tagen konstanter Einnahme sind deine Muskelspeicher gefüllt.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(16)
+        .background(Color.ctCardSurface, in: RoundedRectangle(cornerRadius: 16))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .strokeBorder(Color.black.opacity(0.06), lineWidth: 0.5)
+        )
     }
 }
 
