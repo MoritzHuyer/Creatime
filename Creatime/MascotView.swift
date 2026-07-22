@@ -120,11 +120,12 @@ struct KreaBubble: View {
         .padding(12)
         .frame(maxWidth: 280, alignment: .leading)
         .background(
-            // Card-Surface — bewusst generisch, NICHT `Color.ctCardSurface`
-            // (Krea steht auch in Settings-Mode auf dem Tab, der Surface
-            // ist App-only). Wir nehmen stattdessen eine dezente
-            // Background-Opazität — funktioniert in Dark + Light.
-            Color(.secondarySystemBackground),
+        // Card-Surface — bewusst konsistent mit den übrigen BaseCards
+        // der HistoryView (PhotoStreakView, HistoryCharts nutzen ebenfalls
+        // `Color.ctCardSurface`). Das Token ist im Creatime-Target global
+        // verfügbar (Definition in SubtleCard.swift) und adaptiert Light/
+        // Dark automatisch via UIColor-Trait-Init. Voll deckend.
+            Color.ctCardSurface,
             in: RoundedRectangle(cornerRadius: 16, style: .continuous)
         )
         .overlay(
